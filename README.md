@@ -1,4 +1,4 @@
-# youtube-publish-kit — YouTube 上架素材自動化生產線
+# media-youtube-publish — YouTube 上架素材自動化生產線
 
 把原始影片素材丟進來，AI agent 接力產出：剪好的影片、SRT 字幕、純文字稿、封面圖、YouTube 描述、社群貼文、SEO 標籤。
 
@@ -51,7 +51,7 @@ raw/<video-id>/source.mp4
 | [`short-video-workflow`](./skills/short-video-workflow/SKILL.md) | 長片 → ≤2 分鐘 Shorts |
 | [`cover-image`](./skills/cover-image/SKILL.md) | 封面生圖（agent 沒有內建生圖時才用） |
 
-同步技能到四個 agent 的全域目錄：用全域 `sync-skills` 技能。
+同步技能到四個 agent 的全域目錄：用全域 `skill-sync` 技能。
 
 ## 個人化資產
 

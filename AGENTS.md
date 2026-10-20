@@ -1,4 +1,4 @@
-# youtube-publish-kit（專案藍圖）
+# media-youtube-publish（專案藍圖）
 
 > 本檔為跨 Agent 通用的專案藍圖（AGENTS.md 開放標準）。任何 Agent 的每個 session 都應先讀本檔＋`handoff.md`。
 > Codex、OpenCode、Antigravity 原生就讀本檔；Claude Code 有 `CLAUDE.md` 時只讀它，故由 `CLAUDE.md` 的 `@AGENTS.md` import 進來（`CLAUDE.md` 只有這一行）；Claude 專屬規範寫在本檔〈Claude Code 專屬〉一節。
@@ -23,7 +23,7 @@
 ## 資料夾結構
 
 ```
-youtube-publish-kit/
+media-youtube-publish/
 ├── AGENTS.md         # 本檔 — 跨 Agent 專案藍圖
 ├── CLAUDE.md         # Claude Code 橋接（@AGENTS.md + Claude 專屬）
 ├── handoff.md        # 交接檔（不進 git，只走雲端硬碟同步）
@@ -76,7 +76,7 @@ youtube-publish-kit/
 
 總控技能是**自帶腳本的可攜版本**，跑生產線時用它自己 `scripts/` 內的腳本；其餘技能是拆開的單步驟版本。兩邊的 `scripts/` 與 `references/` 內容逐位元相同，改其中一邊**必須**同步另一邊。
 
-**不要為了消滅重複，把總控改成引用 `../<單步驟技能>/scripts/`。** 技能的消費方式是被 `sync-skills` 複製進各 Agent 的全域目錄，只裝總控沒裝單步驟技能時，跨資料夾引用會整條線壞掉——可攜正是選這個設計的理由。重複是刻意付的代價，用下面的檢查把代價壓住。
+**不要為了消滅重複，把總控改成引用 `../<單步驟技能>/scripts/`。** 技能的消費方式是被 `skill-sync` 複製進各 Agent 的全域目錄，只裝總控沒裝單步驟技能時，跨資料夾引用會整條線壞掉——可攜正是選這個設計的理由。重複是刻意付的代價，用下面的檢查把代價壓住。
 
 `scripts/check_sync.py` 驗證這份重複：逐檔比對 sha256，並抓「單步驟技能新增了檔案卻沒登記」的清單漂移。
 
@@ -84,9 +84,9 @@ youtube-publish-kit/
 - 要當硬關卡就直接跑 `python skills/youtube-video-workflow/scripts/check_sync.py`，不一致 exit 1
 - 新增或刪除共用檔案時，**同時更新 `check_sync.py` 的 `MANIFEST`**（要共用）或 `EXEMPT`（不共用，例如只在單步驟技能裡的測試）。沒登記會直接讓檢查失敗，這是刻意的
 
-單步驟需求（只想轉字幕、只想去靜音）一律走**本 repo 內的單步驟技能**，跑一次 `sync-skills` 裝到全域後，在任何資料夾都能觸發。**不要為此另開或依賴外部 repo**——`agents/audio-to-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
+單步驟需求（只想轉字幕、只想去靜音）一律走**本 repo 內的單步驟技能**，跑一次 `skill-sync` 裝到全域後，在任何資料夾都能觸發。**不要為此另開或依賴外部 repo**——`agents/media-audio-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
 
-同步技能到四個 Agent 的全域目錄：用全域 `sync-skills` 技能。
+同步技能到四個 Agent 的全域目錄：用全域 `skill-sync` 技能。
 
 ### 標準工作流
 
@@ -162,8 +162,8 @@ youtube-publish-kit/
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地（GDrive） | `AGENTS.md`＋`handoff.md`（不進 git，只走雲端硬碟）＋`CLAUDE.md`（橋接） | 每個 session |
-| L2 | GitHub | [changyiwu/youtube-publish-kit](https://github.com/changyiwu/youtube-publish-kit)（公開） | 指定時 |
-| L3 | Obsidian | `youtube-publish-kit/專案工作流程.md` | 有需要時 |
+| L2 | GitHub | [changyiwu/media-youtube-publish](https://github.com/changyiwu/media-youtube-publish)（公開） | 指定時 |
+| L3 | Obsidian | `media-youtube-publish/專案工作流程.md` | 有需要時 |
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 

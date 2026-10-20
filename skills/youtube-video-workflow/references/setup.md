@@ -19,7 +19,7 @@
 ~/.antigravity/skills/youtube-video-workflow/   # Antigravity
 ```
 
-> 實際目錄依各 agent 版本而定；用全域 `sync-skills` 技能同步最省事，它會自己找路徑、逐檔 hash 比對。
+> 實際目錄依各 agent 版本而定；用全域 `skill-sync` 技能同步最省事，它會自己找路徑、逐檔 hash 比對。
 
 全域安裝後專案不必再放一份；技能會把目前工作目錄當專案根目錄。
 
