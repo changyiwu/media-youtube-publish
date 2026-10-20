@@ -189,6 +189,7 @@ media-youtube-publish/
 - **不要假設另一個 Agent 知道你做了什麼**，交接寫得像給陌生人看
 - 所有回應、文件與 commit 訊息使用繁體中文
 - 修改前先確認計畫，優先保留原有資料結構
+- **產出一律放 `output/`**：本專案產生的檔案或資料夾預設放專案根目錄的 `output/`（一支影片一個資料夾），不另開 `outputs/`、`exports/`、`generated/`、`out/` 之類的資料夾；`output/` 只追蹤子資料夾的 `.gitkeep` 佔位檔，內容不進 git。
 
 ## Claude Code 專屬
 
