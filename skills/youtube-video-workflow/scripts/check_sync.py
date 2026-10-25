@@ -5,6 +5,9 @@
 腳本與參考檔（見 AGENTS.md）。重複是設計選擇，代價是改了一邊忘了另一邊——這支就是
 把「記得同步」從人腦移到機器。
 
+另外兩種跨專案副本也一起比：`UPSTREAM`（原始檔在隔壁專案，例如 draw.py）與
+`DOWNSTREAM`（正本在本 repo、副本在隔壁專案，例如發布資訊範本）。
+
 用法：
     python check_sync.py            # 不一致就 exit 1
     python check_sync.py --quiet    # 只印問題
@@ -48,6 +51,7 @@ MANIFEST = {
         ("scripts/burn_subtitles.py", "scripts/burn_subtitles.py"),
         ("scripts/clip_cut.py", "scripts/clip_cut.py"),
         ("scripts/make_vertical.py", "scripts/make_vertical.py"),
+        ("references/發布資訊範本.md", "references/發布資訊範本.md"),
     ],
 }
 
@@ -60,6 +64,20 @@ EXEMPT = {
 # 一律改上游再整份覆蓋過來。上游不在（技能裝在全域、或這台沒有那個專案）就略過，不算錯。
 UPSTREAM = [
     ("cover-image/draw.py", "agent-setup-guide/skills/05-draw/draw.py"),
+]
+
+# 反方向：正本在本 repo、副本在隔壁專案的檔案：(本 repo 技能內的正本, [相對 agents/ 的副本路徑, ...])。
+# 改正本後整份覆蓋到各副本。副本所在專案不在這台就略過，不算錯。
+DOWNSTREAM = [
+    (
+        "youtube-video-workflow/references/發布資訊範本.md",
+        [
+            "media-short-film/templates/發布資訊範本.md",
+            "media-3d-studio/templates/發布資訊範本.md",
+            "media-music-video/templates/發布資訊範本.md",
+            "media-video-specs/templates/發布資訊範本.md",
+        ],
+    ),
 ]
 
 WORKFLOW_SKILL = "youtube-video-workflow"
@@ -158,6 +176,25 @@ def check(skills_root: Path, quiet: bool = False) -> int:
             )
         elif not quiet:
             print("[OK] {}（= {}）".format(local_rel, upstream_rel))
+
+    for local_rel, copies in DOWNSTREAM:
+        local = skills_root / local_rel
+        if not local.is_file():
+            problems.append("[ERR] 正本不存在：{}".format(local_rel))
+            continue
+        for copy_rel in copies:
+            copy = agents_root / copy_rel
+            if not copy.parent.parent.is_dir():
+                continue  # 這台沒有那個專案
+            checked += 1
+            if not copy.is_file():
+                problems.append("[ERR] 副本不存在：{}（從 {} 複製過去）".format(copy_rel, local_rel))
+            elif sha256(local) != sha256(copy):
+                problems.append(
+                    "[ERR] 副本與正本不一致：{}  ≠  {}（以正本為準，整份覆蓋過去）".format(copy_rel, local_rel)
+                )
+            elif not quiet:
+                print("[OK] {}（= {}）".format(copy_rel, local_rel))
 
     if skipped_skills and not quiet:
         print("[SKIP] 未找到下列技能，略過：{}".format("、".join(skipped_skills)))

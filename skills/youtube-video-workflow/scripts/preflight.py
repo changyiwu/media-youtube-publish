@@ -10,6 +10,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+# 第三方套件登記表（AGENTS.md〈相容性〉）：只在某一步才用到、沒裝不影響剪片與字幕的套件。
+# 新增套件就加一列，沒登記的套件不准用。格式：(import 名, pip 套件名, 用途)
+# 本地 Whisper 二擇一、auto-editor 走 CLI，判斷方式不同，各自有專屬檢查。
+OPTIONAL_PACKAGES = [
+    ("PIL", "pillow", "封面裁切疊字（skills/cover/cover.py）"),
+    ("openai", "openai", "封面生圖（draw.py，只有 Claude Code／OpenCode 需要）"),
+]
+
 
 def tool_status(name: str) -> bool:
     path = shutil.which(name)
@@ -87,6 +95,15 @@ def local_whisper_status() -> bool:
     return False
 
 
+def optional_packages_status() -> None:
+    """登記表裡的套件逐一檢查；沒裝只警告，因為只影響用到它的那一步。"""
+    for module, package, purpose in OPTIONAL_PACKAGES:
+        if importlib.util.find_spec(module) is not None:
+            print(f"[OK] {package}：{purpose}")
+        else:
+            print(f"[WARN] 沒有 {package}：{purpose}無法使用；需要時執行 python -m pip install {package}")
+
+
 def sync_status() -> bool:
     """檢查總控自帶的可攜副本是否與單步驟技能一致。
 
@@ -117,6 +134,7 @@ def main() -> int:
     editor_ok = auto_editor_status()
     local_ok = local_whisper_status()
     groq_ok = groq_key_status(needed=not local_ok)
+    optional_packages_status()
     sync_status()
 
     required_ok = python_ok and ffmpeg_ok and ffprobe_ok and editor_ok

@@ -1,6 +1,6 @@
 ---
 name: short-video-workflow
-description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組成 ≤2 分鐘的短片。當使用者要『剪 short / 做短片 / 抓亮點 / 剪精華 / 做 YouTube Shorts』時請使用此 Skill。會依字幕亮點偵測產 3 個候選版本（痛點型/好奇型/承諾型），等使用者選；也接受使用者直接給時間碼或描述覆寫。輸出走 `output/<短片標題> [<Agent>] (Short)/`（`<Agent>` 為 Claude／Codex／OpenCode／Antigravity），含 16:9 乾淨版/16:9 字幕版/9:16 直式版/srt/txt/cover/metadata 七個檔（YouTube Shorts 發布用直式版）。
+description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組成 ≤2 分鐘的短片。當使用者要『剪 short / 做短片 / 抓亮點 / 剪精華 / 做 YouTube Shorts』時請使用此 Skill。會依字幕亮點偵測產 3 個候選版本（痛點型/好奇型/承諾型），等使用者選；也接受使用者直接給時間碼或描述覆寫。輸出走 `output/<短片標題> [<Agent>] (Short)/`（`<Agent>` 為 Claude／Codex／OpenCode／Antigravity），含 16:9 乾淨版/16:9 字幕版/9:16 直式版/srt/txt/cover/發布資訊 七個檔（YouTube Shorts 發布用直式版）。
 ---
 
 # short-video-workflow：長片亮點 → ≤2 分鐘短片
@@ -32,7 +32,7 @@ description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組�
 | 短片時長上限 | **≤ 120 秒** |
 | 開頭 Hook | **≤ 5 秒** |
 | 候選版本數 | **3 個**（不同 hook 策略） |
-| 內部檔案 | 7 個：`<標題>.mp4`（16:9 乾淨）/ `<標題>_字幕版.mp4`（16:9 燒字幕）/ `<標題>_直式9x16.mp4` / `.srt` / `.txt` / `cover.png` / `metadata.md` |
+| 內部檔案 | 7 個：`<標題>.mp4`（16:9 乾淨）/ `<標題>_字幕版.mp4`（16:9 燒字幕）/ `<標題>_直式9x16.mp4` / `.srt` / `.txt` / `cover.png` / `發布資訊.md` |
 
 ---
 
@@ -191,9 +191,9 @@ python skills/short-video-workflow/scripts/make_vertical.py \
 - **沒有內建生圖（Claude Code／OpenCode）**：
   `python skills/cover-image/draw.py "<prompt>" --edit "assets/persona/<你的人物照>.png" --size 1536x1024 --quality low --name cover --outdir "output/<標題> [<Agent>] (Short)/"`
 
-### Step 10：寫 metadata（短片版本）
+### Step 10：寫發布資訊（短片版本）
 
-`metadata.md` 結構**與長片不同**（短片有自己的玩法）：
+把 [references/發布資訊範本.md](references/發布資訊範本.md) 複製成 `output/<短片標題> [<Agent>] (Short)/發布資訊.md`，結構照範本（含 AI 揭露、Threads），內容照下列短片玩法寫：
 
 1. **YouTube 短描述**（≤ 150 字，前 50 字最關鍵）
 2. **Hashtag 帶**：開頭 3 個 → `#Shorts #<頻道主題>` 一定要有
@@ -213,7 +213,7 @@ python skills/short-video-workflow/scripts/make_vertical.py \
 - [ ] 7 個檔案齊全（含 `_直式9x16.mp4`）
 - [ ] 直式版解析度 1080×1920（make_vertical.py 會自動驗證）
 - [ ] cover.png 主色符合 `cover-style.md` 的配色規則
-- [ ] metadata.md 含 `#Shorts` 標籤
+- [ ] 發布資訊.md 照範本結構、含 `#Shorts` 標籤
 - [ ] handoff.md 已更新本支短片狀態
 
 ### Step 12：更新 handoff.md

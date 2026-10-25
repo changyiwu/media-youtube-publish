@@ -11,7 +11,7 @@
 2. **audio-to-srt** — 本地 Whisper（或 Groq）轉成乾淨 SRT，逐段清字 + 疑慮術語人工勘誤
 3. **10 個標題候選** — 停下等你挑
 4. **平行產出** — 封面圖（人物基準照 + 頻道風格）、YouTube 描述、社群貼文、SEO 標籤
-5. **打包** — 影片 + 字幕 + 純文字 + 封面 + metadata，放進 `output/<標題> [<Agent>]/`
+5. **打包** — 影片 + 字幕 + 純文字 + 封面 + 發布資訊，放進 `output/<標題> [<Agent>]/`
 6. **（可選）短片** — 從長片字幕抓亮點剪 ≤2 分鐘 Shorts，含 9:16 直式版
 
 一次跑完整條線：對 agent 說「使用 `youtube-video-workflow` 處理 `raw/<video-id>`」。
@@ -27,6 +27,9 @@
 | auto-editor | 去靜音剪輯 | `pip install auto-editor` |
 | faster-whisper | 本地字幕（預設路線） | `pip install faster-whisper`；有 NVIDIA GPU 再加 `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` |
 | openai（Python SDK） | 封面生圖（只有 Claude Code／OpenCode 需要） | `pip install openai` |
+| Pillow | 封面裁切疊字（`skills/cover/`） | `pip install pillow` |
+
+> 第三方套件採登記制（見 `AGENTS.md`〈相容性〉）：表上每個套件都由 `preflight.py` 在開工前檢查。
 | Git | 版控（選用） | git-scm.com |
 
 > 第一次跑本地字幕會下載約 1.6 GB 的 large-v3-turbo 模型。沒有 GPU 也能跑（CPU，較慢）；
@@ -78,7 +81,7 @@
 | **字幕詞彙表** | `skills/youtube-video-workflow/references/vocabulary.md`（與 `skills/audio-to-srt/references/vocabulary.md` 同步） | 把「頻道／人物」段換成你的頻道名與常出現的人名，補上你常講的專有名詞 |
 | **詞彙機械替換** | `skills/youtube-video-workflow/references/replacements.md`（與 `skills/audio-to-srt/references/` 同步） | 在表格加一列「聽成 → 正確」。不想動技能本體就改 `~/.audio-to-srt/replacements.md`，會先於內建規則執行 |
 | **疑慮術語掃描** | `.../scripts/find_dubious_terms.py` | `DEFAULT_TERMS` 加入你常講、容易被聽錯的專有名詞 |
-| **行銷語氣** | `skills/youtube-video-workflow/references/marketing-spec.md` | 調整貼文口吻、字數、Emoji 規則 |
+| **行銷語氣** | `skills/youtube-video-workflow/references/marketing-spec.md` | 調整標題風格、貼文口吻與字數（平台規則與結構在同資料夾的 `發布資訊範本.md`，改正本見 `AGENTS.md`） |
 | **GitHub repo** | `AGENTS.md` | 要做版控就 `git init` 並把 `<你的帳號>/<你的 repo>` 填上 |
 
 ---
@@ -148,7 +151,7 @@ agent 會：
 3. 用 45 秒樣本試剪 → 你確認節奏 → 剪全片
 4. 轉字幕 → **停下來**把有疑慮的專有名詞列給你勘誤
 5. 生 10 個標題 → **停下來**等你挑
-6. 你挑完 → 建資料夾 → 平行產封面 + metadata → 打包
+6. 你挑完 → 建資料夾 → 平行產封面 + 發布資訊 → 打包
 7. 收工前更新 `handoff.md`
 
 ---

@@ -4,7 +4,7 @@
 
 分享或安裝時複製**完整** `youtube-video-workflow` 資料夾，不要只複製 `SKILL.md`（腳本與 references 都在裡面）。
 
-放在專案內：
+放在專案內（本頻道的做法，見 `AGENTS.md`〈Skills 用哪一個〉）：
 
 ```text
 <project>/skills/youtube-video-workflow/
@@ -29,7 +29,7 @@
 - ffmpeg 與 ffprobe（加入 PATH）
 - auto-editor：`python -m pip install auto-editor`
 - Groq 帳號與 API key（只有字幕步驟需要）
-- 封面：agent 內建生圖，或 `OPENAI_API_KEY` + `openai` 套件（走 `scripts/draw.py` 時）
+- 封面：agent 內建生圖，或 `OPENAI_API_KEY` + `openai` 套件（走 `scripts/draw.py` 時）；疊字用 `pillow`（`cover` 技能）
 
 本技能的 Groq 呼叫使用 Python 標準函式庫，不需要安裝 `groq` 套件。
 
@@ -68,7 +68,7 @@ project/
 | `references/vocabulary.md` | 換成自己的頻道名、人名、產品名與常用術語 |
 | `references/replacements.md` 的表格 | 加入自己內容裡「Whisper 常聽錯 → 正確」的對照；個人規則可放 `~/.audio-to-srt/replacements.md` |
 | `scripts/find_dubious_terms.py` 的 `DEFAULT_TERMS` | 加入自己常講、容易被聽錯的專有名詞 |
-| `references/marketing-spec.md` | 調整貼文口吻、字數、Emoji 規則與平台規格 |
+| `references/marketing-spec.md` | 調整標題風格、貼文口吻與字數；平台規則與結構在 `references/發布資訊範本.md` |
 | `assets/persona/` | 放自己的人物基準照（原始照，不是生成圖） |
 | `assets/style/cover-style.md` | 定義自己的色票、構圖、字型與禁止事項 |
 | `assets/style/reference-thumbnails.png` | 選放 9–12 張既有封面拼成一張圖 |

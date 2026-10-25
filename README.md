@@ -25,7 +25,7 @@ raw/<video-id>/source.mp4
                      ├── <標題>.srt
                      ├── <標題>.txt
                      ├── cover.png      ← 人物基準照 + 頻道風格
-                     └── metadata.md    ← 描述 / 社群貼文 / SEO 標籤
+                     └── 發布資訊.md    ← YouTube 說明欄 / 社群貼文 / 標籤
 
 （可選）短片模式 → output/<短片標題> [<Agent>] (Short)/  含 9:16 直式版，共 7 檔
 ```
@@ -51,7 +51,7 @@ raw/<video-id>/source.mp4
 | [`short-video-workflow`](./skills/short-video-workflow/SKILL.md) | 長片 → ≤2 分鐘 Shorts |
 | [`cover-image`](./skills/cover-image/SKILL.md) | 封面生圖（agent 沒有內建生圖時才用） |
 
-同步技能到四個 agent 的全域目錄：用全域 `skill-sync` 技能。
+技能留在專案內使用（Agent 依 `AGENTS.md` 直接讀 `skills/<技能>/SKILL.md`），不裝到全域；只有 `skills/cover/` 用 `skill-sync` 裝到全域，給其他媒體專案做封面。
 
 ## 個人化資產
 

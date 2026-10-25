@@ -43,7 +43,8 @@ media-youtube-publish/
     ├── audio-to-srt/                # 單步驟：語音轉 SRT
     ├── video-editing-and-subtitles/ # 剪輯＋字幕精修，不做行銷素材
     ├── short-video-workflow/        # 長片 → ≤2 分鐘 Shorts
-    └── cover-image/                 # 封面生圖（沒有內建生圖的 Agent 才用）
+    ├── cover-image/                 # 封面生圖（沒有內建生圖的 Agent 才用）
+    └── cover/                       # 底圖 → 封面（裁切＋疊字），唯一裝到全域的技能
 ```
 
 ---
@@ -72,11 +73,12 @@ media-youtube-publish/
 | `skills/audio-to-srt/` | 只想轉 SRT |
 | `skills/video-editing-and-subtitles/` | 只要影片＋字幕，不要行銷素材 |
 | `skills/short-video-workflow/` | 長片跑完後加碼剪 Shorts |
-| `skills/cover-image/` | Agent 沒有內建生圖時才用 |
+| `skills/cover-image/` | Agent 沒有內建生圖時才用：生封面底圖 |
+| `skills/cover/` | 底圖做成 YouTube／Reels／貼文封面（裁切、疊大字、清 metadata）；不生圖 |
 
 總控技能是**自帶腳本的可攜版本**，跑生產線時用它自己 `scripts/` 內的腳本；其餘技能是拆開的單步驟版本。兩邊的 `scripts/` 與 `references/` 內容逐位元相同，改其中一邊**必須**同步另一邊。
 
-**不要為了消滅重複，把總控改成引用 `../<單步驟技能>/scripts/`。** 技能的消費方式是被 `skill-sync` 複製進各 Agent 的全域目錄，只裝總控沒裝單步驟技能時，跨資料夾引用會整條線壞掉——可攜正是選這個設計的理由。重複是刻意付的代價，用下面的檢查把代價壓住。
+**不要為了消滅重複，把總控改成引用 `../<單步驟技能>/scripts/`。** 技能可能被單獨複製到別處（另一台電腦、某個 Agent 的全域目錄），只帶總控沒帶單步驟技能時，跨資料夾引用會整條線壞掉——可攜正是選這個設計的理由。重複是刻意付的代價，用下面的檢查把代價壓住。
 
 `scripts/check_sync.py` 驗證這份重複：逐檔比對 sha256，並抓「單步驟技能新增了檔案卻沒登記」的清單漂移。
 
@@ -87,9 +89,12 @@ media-youtube-publish/
   `cover-image/draw.py` 與總控 `scripts/draw.py` 都是它的逐位元副本，**一律改上游再覆蓋過來**，不准在本 repo 就地改；
   `check_sync.py` 的 `UPSTREAM` 會比對（上游不在這台時略過）
 
-單步驟需求（只想轉字幕、只想去靜音）一律走**本 repo 內的單步驟技能**，跑一次 `skill-sync` 裝到全域後，在任何資料夾都能觸發。**不要為此另開或依賴外部 repo**——`agents/media-audio-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
+**技能留在專案內使用，不裝到全域**：在本專案開 session 時，Agent 依上面〈Skills 用哪一個〉直接讀 `skills/<技能>/SKILL.md`，四種 Agent 都適用。
+代價是不會依對話自動觸發、也不能在別的資料夾用——做影片就在本專案做。單步驟需求（只想轉字幕、只想去靜音）同樣在本專案走單步驟技能。
+**不要為此另開或依賴外部 repo**——`agents/media-audio-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
 
-同步技能到四個 Agent 的全域目錄：用全域 `skill-sync` 技能。
+**唯一例外是 `cover`**：media-short-film、media-3d-studio、media-music-video、media-video-specs 也要做封面，所以只把它用全域 `skill-sync` 裝到四個 Agent 的全域目錄。
+改了 `skills/cover/` 就要再跑一次同步；其他技能不要裝到全域（`skill-sync` 會把「來源有、但都沒裝」當成刻意不裝，不會自動補）。
 
 ### 標準工作流
 
@@ -100,12 +105,13 @@ media-youtube-publish/
 3. **剪口播**：`smart_cut.py` → `<video-id>.cut.mp4`（先用 45 秒樣本試剪讓使用者確認節奏）
 4. **轉字幕**：transcribe（預設本地，沒裝才走 Groq；輸出同格式）→ resegment → apply_vocab → find_dubious_terms → **🛑 確認疑慮術語** → finalize → **validate_srt【硬關卡】** → srt_to_txt
 5. **生 10 個標題候選** → `working/<video-id>/titles.md` → **🛑 等使用者挑**
-6. **選定後**：清洗標題成合法資料夾名（去掉 `？！：／＼?!:/\<>|"*`）→ 建 `output/<標題> [<Agent>]/`，平行產出封面與 `metadata.md`
-7. **打包**：`<標題>.mp4`／`.srt`／`.txt`／`cover.png`／`metadata.md` 五件套
+6. **選定後**：清洗標題成合法資料夾名（去掉 `？！：／＼?!:/\<>|"*`）→ 建 `output/<標題> [<Agent>]/`，平行產出封面與 `發布資訊.md`
+7. **打包**：`<標題>.mp4`／`.srt`／`.txt`／`cover.png`／`發布資訊.md` 五件套
 8. **（可選）短片**：接 `skills/short-video-workflow/`，輸出 `output/<短片標題> [<Agent>] (Short)/`，7 件套（含 9:16 直式版）
 9. **更新 `handoff.md`**
 
-`metadata.md` **必含「YouTube 標籤欄位（直接複製）」的逗號分隔版與「全部一次貼」整合版**。
+`發布資訊.md` **照 `references/發布資訊範本.md` 的結構寫**（YouTube／FB／IG／Threads 文案、AI 揭露、可直接貼進標籤欄的一行），口播的寫法照 `references/marketing-spec.md`。
+範本是五個媒體專案共用的，**正本就是本 repo 的 `skills/youtube-video-workflow/references/發布資訊範本.md`**：要改就改正本，再整份覆蓋到 `skills/short-video-workflow/references/` 與 media-short-film、media-3d-studio、media-music-video、media-video-specs 的 `templates/`；`check_sync.py` 的 `MANIFEST` 與 `DOWNSTREAM` 會逐一比對。其他專案的副本不准就地改。
 
 ### 三個不准跳過的 STOP 關卡
 
@@ -147,9 +153,13 @@ media-youtube-publish/
 
 ### 相容性
 
-- 腳本**不得引入第三方套件**，標準庫寫得出來就用標準庫——漏裝的 pip 套件會在流程跑到一半才爆。
-  **唯一例外**是 `transcribe_local.py` 的 Whisper 引擎（faster-whisper／openai-whisper）：只准在函式內 import、
-  沒裝時一開始就報錯，並由 `preflight.py` 檢查。新增其他例外前先問使用者
+- **第三方套件採登記制**：要防的是「漏裝的 pip 套件在流程跑到一半才爆」，所以開工前由 `preflight.py` 一次檢查。
+  用第三方套件必須同時做到三件事，缺一不可：
+  1. 登記進 `preflight.py`——只影響某一步的加進 `OPTIONAL_PACKAGES`（沒裝只 `[WARN]`），整條線都要的寫成專屬檢查（沒裝 `[ERR]`）
+  2. 腳本一開始就確認套件在不在，沒裝立刻停下並印出安裝指令，不准做到一半才 import 失敗
+  3. 寫進 `SETUP.md`〈系統前置〉表格
+  標準庫做得到、難度差不多的仍優先用標準庫（每多一個套件，每台電腦、每個 Python 都要多裝一次）。
+  目前登記的：auto-editor、faster-whisper／openai-whisper（專屬檢查）、pillow、openai（`OPTIONAL_PACKAGES`）
 - 維持 **Python 3.9+ 相容**（別「順手現代化」成 `Path | None` 這類 3.10 語法）
 - 目標平台以 **Windows** 為主：直接呼叫 `whisper` CLI 時一律加 `PYTHONUTF8=1` 與 `-X utf8`，否則 cp950 寫不了繁中；
   腳本寫檔一律明確指定 `encoding="utf-8"`

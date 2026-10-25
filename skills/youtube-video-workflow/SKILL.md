@@ -1,6 +1,6 @@
 ---
 name: youtube-video-workflow
-description: 通用的 YouTube 影片自動化生產總控技能，四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用同一份流程。當使用者要求處理 raw 裡的新影片、一次跑完整 YouTube 生產線（剪口播→轉字幕→疑慮字幕確認→標題→封面→metadata→打包→可選短片）、剪口播去靜音、把影片轉 SRT 字幕、產標題候選、做封面、寫 YouTube 描述／社群貼文／SEO 標籤、剪 Shorts 短片，或說「使用 youtube-video-workflow」時使用。封面依執行中的 agent 自動選路：有內建生圖就用內建，沒有才呼叫本技能自帶的 scripts/draw.py。
+description: 通用的 YouTube 影片自動化生產總控技能，四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用同一份流程。當使用者要求處理 raw 裡的新影片、一次跑完整 YouTube 生產線（剪口播→轉字幕→疑慮字幕確認→標題→封面→發布資訊→打包→可選短片）、剪口播去靜音、把影片轉 SRT 字幕、產標題候選、做封面、寫 YouTube 說明欄／社群貼文／SEO 標籤、剪 Shorts 短片，或說「使用 youtube-video-workflow」時使用。封面依執行中的 agent 自動選路：有內建生圖就用內建，沒有才呼叫本技能自帶的 scripts/draw.py。
 ---
 
 # youtube-video-workflow：YouTube 影片生產總控（通用版）
@@ -11,9 +11,9 @@ description: 通用的 YouTube 影片自動化生產總控技能，四種 agent�
 
 ```
 階段 1 長片：剪口播 → 轉字幕 → 🛑STOP1 疑慮字幕確認 → 時間碼硬關卡
-            → 🛑STOP2 標題確認 → 封面 → metadata → 打包
+            → 🛑STOP2 標題確認 → 封面 → 發布資訊 → 打包
 階段 2 短片（可選）：讀完整字幕 → 亮點偵測 → 🛑STOP3 三候選確認
-            → 切片組片 → 短片標題 → 短片 metadata → 打包
+            → 切片組片 → 短片標題 → 短片發布資訊 → 打包
 ```
 
 - **🛑 STOP**：三個關卡都必須**停下等使用者拍板**，不准自己猜了就往下衝。
@@ -34,7 +34,7 @@ description: 通用的 YouTube 影片自動化生產總控技能，四種 agent�
 
 判斷原則一句話：**你有內建生圖就用內建，沒有才走 draw.py**。短片資料夾後綴則是 ` [<Agent>] (Short)`。
 
-其餘所有步驟（剪片、字幕、標題、metadata、打包、交班）四種 agent 完全相同，不要各自發明流程。
+其餘所有步驟（剪片、字幕、標題、發布資訊、打包、交班）四種 agent 完全相同，不要各自發明流程。
 
 ---
 
@@ -175,15 +175,14 @@ python "$SkillDir/scripts/draw.py" "<prompt>" `
 
 ## 5. Metadata 與長片打包
 
-先讀 [marketing-spec.md](references/marketing-spec.md)，依**清字後逐字稿**（不是憑空想像）寫 `metadata.md`，至少包含：
+把 [發布資訊範本.md](references/發布資訊範本.md) 複製成 `output/<標題> [<Agent>]/發布資訊.md`，再照 [marketing-spec.md](references/marketing-spec.md) 依**清字後逐字稿**（不是憑空想像）填寫，刪掉用不到的段落與 `<…>` 佔位。至少包含：
 
 1. 選定標題 + 10 個候選（好奇／價值／痛點三風格穿插）
-2. YouTube 描述 ≤300 字：Hook（前兩行吸睛）+ 3 個關鍵知識點列點 + CTA
-3. 社群貼文（FB／IG／Threads）：**嚴禁 Emoji**、每段 ≤3 行、150–200 字、結尾留互動問題
-4. SEO 關鍵字 15–20 個
-5. **「YouTube 標籤欄位（直接複製）」**：半形逗號分隔版 + 「全部一次貼」整合版
-6. 依 SRT 產生的建議章節時間碼
-7. 上架前 checklist
+2. YouTube 說明欄：Hook（前兩行吸睛）+ 3 個關鍵知識點 + 依 SRT 的章節時間碼 + CTA，開場到 CTA ≤300 字
+3. AI 與製作方式揭露、工具名單（每個平台都要有）
+4. 標籤：SEO 關鍵字 15–20 個，整理成可直接貼進 YouTube 標籤欄的一行
+5. 社群貼文：Facebook、Instagram 各一版（每段 ≤3 行、150–200 字、結尾留互動問題）＋ Threads 短文
+6. 封面與 Studio 設定、發布前檢查
 
 交付 5 個檔案：
 
@@ -193,7 +192,7 @@ output/<標題> [<Agent>]/
 ├── <標題>.srt
 ├── <標題>.txt
 ├── cover.png
-└── metadata.md
+└── 發布資訊.md
 ```
 
 **自我檢查清單**：
@@ -203,7 +202,7 @@ output/<標題> [<Agent>]/
 - [ ] 影片檔名等於 YouTube 標題、時長合理
 - [ ] SRT 通過 `validate_srt.py`
 - [ ] cover.png 為 16:9、人物延續基準照、主色正確
-- [ ] metadata.md 含「全部一次貼」整合版標籤
+- [ ] 發布資訊.md 照範本結構、各平台都有 AI 揭露、標籤一行可直接貼上
 - [ ] `handoff.md` 已更新本支影片狀態、輸出位置、待審事項、下一步
 
 ## 6. 短片流程（可選）
@@ -228,8 +227,8 @@ python "$SkillDir/scripts/make_vertical.py"  "$Work/short-tmp/short-subtitled.mp
 ```
 
 5. **短片標題**：出 3 個更短更聳動的候選等使用者選（短片不需要 10 個）。
-6. **短片 metadata**：套用 `marketing-spec.md` 的「C. 短片差異」覆寫（標題 3 個、描述 ≤150 字、`#Shorts` 必備、標籤結尾加 `Shorts,短影片`）。
-7. 以 `[<Agent>] (Short)` 後綴打包 **7 個檔案**：16:9 乾淨版、16:9 燒字幕版、9:16 直式版、srt、txt、cover.png、metadata.md。
+6. **短片發布資訊**：同樣照範本寫 `發布資訊.md`，套用 `marketing-spec.md` 的「B. Shorts 差異」覆寫（標題 3 個、描述 ≤150 字、`#Shorts` 必備、標籤結尾加 `Shorts,短影片`）。
+7. 以 `[<Agent>] (Short)` 後綴打包 **7 個檔案**：16:9 乾淨版、16:9 燒字幕版、9:16 直式版、srt、txt、cover.png、發布資訊.md。
 
 ## 失敗處理
 
