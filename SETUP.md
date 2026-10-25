@@ -67,7 +67,7 @@
 | OpenCode | 全域 `draw` 技能 | 走 API 路線時 ✅ | ` [OpenCode]` |
 | Antigravity | 內建 `generate_image` | ❌ | ` [Antigravity]` |
 
-底圖不寫字，四邊都用 `skills/cover/` 疊字；也都遵守同一份 `assets/style/cover-style.md` 與 `assets/persona/` 人物基準照，產出風格才會一致。
+封面預設底圖不寫字、用 `skills/cover/` 疊字；特別企劃要華麗字效可改由生圖直接畫字（`cover.py --no-text`，要過錯字檢查，見 `skills/cover/SKILL.md`）。四邊也都遵守同一份 `assets/style/cover-style.md` 與 `assets/persona/` 人物基準照，產出風格才會一致。
 
 ---
 

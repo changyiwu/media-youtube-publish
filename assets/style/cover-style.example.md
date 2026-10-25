@@ -165,8 +165,13 @@ Read assets/style/cover-style.md（本檔）
   → 重新 Read assets/persona/<你的人物照>.png
   → 依主題配色規則決定主色
   → 填好 prompt
-  → 依 agent 選路：內建生圖工具，或全域 draw 技能 --edit <人物照>；底圖不寫字，再用 skills/cover/ 疊字
+  → 依 agent 選路：內建生圖工具，或全域 draw 技能 --edit <人物照>
+  → 路線 A（預設）：底圖不寫字，再用 skills/cover/ 疊字
+    路線 B（特別企劃、要華麗字效；本頻道要開放才可用）：生圖連主標一起畫，
+    cover.py --no-text 只裁切輸出，並過 skills/cover/ 的錯字檢查關卡
 ```
+
+`<要不要開放路線 B：例「開放，限特別企劃」或「不開放」>`
 
 `--edit` 一次只吃一張輸入圖，所以參考圖只能傳人物基準照；風格靠 prompt 貼近本檔描述來維持。
 

@@ -197,6 +197,8 @@ python skills/cover/cover.py "working/<video-id>/short-cover-base.png" `
 
 `--formats yt,reel` 同時產 16:9 縮圖與 9:16 的 Shorts 封面（`cover_9x16.png`）。
 
+要華麗字效也可走路線 B（draw 直接生字 → `cover.py --no-text`），規則與 🛑 錯字檢查關卡見 [`cover` 技能](../cover/SKILL.md)，不在這裡另寫一份。
+
 ### Step 10：寫發布資訊（短片版本）
 
 把 [發布資訊範本.md](../youtube-long/references/發布資訊範本.md) 複製成 `output/<短片標題> [<Agent>] (Short)/發布資訊.md`，結構照範本（含 AI 揭露、Threads），內容照下列短片玩法寫：

@@ -24,7 +24,7 @@ raw/<video-id>/source.mp4
                      ├── <標題>.mp4
                      ├── <標題>.srt
                      ├── <標題>.txt
-                     ├── cover.png      ← draw 生底圖（人物基準照 + 頻道風格）→ cover 疊字
+                     ├── cover.png      ← draw 生底圖（人物基準照 + 頻道風格）→ cover 疊字（或 draw 直接生字）
                      └── 發布資訊.md    ← YouTube 說明欄 / 社群貼文 / 標籤
 
 （可選）youtube-shorts → output/<短片標題> [<Agent>] (Short)/  含 9:16 直式版與 9:16 封面，共 8 檔
@@ -47,7 +47,7 @@ raw/<video-id>/source.mp4
 | [`youtube-long`](./skills/youtube-long/SKILL.md) | **主要入口** — 長片一條龍；只去靜音、只要影片＋字幕也走這個（跑到第幾步就停） |
 | [`youtube-shorts`](./skills/youtube-shorts/SKILL.md) | 長片 → ≤2 分鐘 Shorts |
 | [`audio-to-srt`](./skills/audio-to-srt/SKILL.md) | 語音轉 SRT（也裝到全域給其他專案用） |
-| [`cover`](./skills/cover/SKILL.md) | 底圖 → 封面（裁切＋疊字；也裝到全域） |
+| [`cover`](./skills/cover/SKILL.md) | 底圖 → 封面（裁切＋選用疊字；也裝到全域） |
 
 技能在專案內使用（Agent 依 `AGENTS.md` 直接讀 `skills/<技能>/SKILL.md`），腳本只放一份、技能之間直接引用。
 `audio-to-srt` 與 `cover` 另用 `skill-sync` 裝到全域；封面底圖用全域的 `draw` 技能。

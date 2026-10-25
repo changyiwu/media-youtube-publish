@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """把一張底圖（或影片的一格）做成 YouTube／Reels／貼文封面。
 
-只做「裁切＋疊大字＋輸出」，不生圖：底圖由各專案自己準備（首幀、渲染圖、
+只做「裁切＋（選用）疊大字＋輸出」，不生圖：底圖由各專案自己準備（首幀、渲染圖、
 截圖、生圖結果）。輸出不帶任何 metadata。
 
 用法：
+    # 路線 A：後製疊字
     python cover.py <底圖或影片> --text 完美數 [--sub 歐幾里得] --font <OFL 字型檔>
                     [--at 秒數] [--focus 0.5,0.4] [--corner tl|tr|bl|br]
                     [--formats yt,reel,post] [--outdir .] [--name cover]
+    # 路線 B：底圖已由生圖畫好字，只裁切輸出
+    python cover.py <已含字的圖> --no-text [--focus 0.5,0.5] [--formats yt,reel,post]
+
+--text 與 --no-text 必須二選一，避免漏打參數就默默輸出沒字的封面。
 
 字型找法（依序）：--font → 環境變數 COVER_FONT → ~/.config/cover/fonts/ 裡第一個
-.otf／.ttf。都找不到就停下來，不自動下載。
+.otf／.ttf。都找不到就停下來，不自動下載。--no-text 不需要字型。
 
 需要 Pillow；從影片取一格時另需 ffmpeg。維持 Python 3.9+ 相容。
 """
@@ -197,9 +202,11 @@ def parse_color(value: str) -> tuple[int, int, int]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="底圖 → 封面（裁切＋疊字＋清 metadata）")
+    ap = argparse.ArgumentParser(description="底圖 → 封面（裁切＋選用疊字＋清 metadata）")
     ap.add_argument("source", type=Path, help="底圖，或影片（搭配 --at）")
-    ap.add_argument("--text", required=True, help="主標，建議 6 字內")
+    ap.add_argument("--text", help="主標，建議 6 字內（與 --no-text 二選一）")
+    ap.add_argument("--no-text", action="store_true",
+                    help="不疊字，只裁切輸出（底圖的字已由生圖畫好；與 --text 二選一）")
     ap.add_argument("--sub", default="", help="小標（選用），放在主標上方")
     ap.add_argument("--font", help="OFL 字型檔路徑")
     ap.add_argument("--at", type=float, default=0.0, help="來源是影片時取第幾秒")
@@ -215,12 +222,17 @@ def main() -> int:
     ap.add_argument("--name", default="cover")
     args = ap.parse_args()
     # Windows 主控台預設 cp950，中文路徑會印成亂碼
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
 
+    if args.no_text == bool(args.text):
+        sys.exit("[ERR] --text 與 --no-text 要二選一：要疊字給 --text，底圖已有字給 --no-text")
+    if args.no_text and args.sub:
+        sys.exit("[ERR] --no-text 不疊字，不能同時給 --sub")
     if not args.source.is_file():
         sys.exit("[ERR] 找不到來源：{}".format(args.source))
-    font = find_font(args.font)
+    font = None if args.no_text else find_font(args.font)
     focus = tuple(float(v) for v in args.focus.split(","))
     if args.source.suffix.lower() in VIDEO_EXT:
         base = grab_frame(args.source, args.at)
@@ -240,12 +252,13 @@ def main() -> int:
             box[3] = fg_top - round(h * 0.02)
         else:
             img = cover_crop(base, w, h, focus)
-            if args.shade:
+            if args.shade and not args.no_text:
                 img = shade(img, "top" if portrait else args.corner, args.shade)
             if portrait:
                 box[3] = box[1] + round((box[3] - box[1]) * 0.45)
-        img = draw_text(img, font, args.text, args.sub, None if portrait else args.corner, tuple(box),
-                        parse_color(args.fill), parse_color(args.stroke), parse_color(args.accent))
+        if not args.no_text:
+            img = draw_text(img, font, args.text, args.sub, None if portrait else args.corner, tuple(box),
+                            parse_color(args.fill), parse_color(args.stroke), parse_color(args.accent))
         out = save_clean(img, args.outdir / "{}{}.png".format(args.name, suffix),
                          YT_MAX_BYTES if key == "yt" else None)
         print("[OK] {}  {}×{}  {:.0f} KB".format(out, w, h, out.stat().st_size / 1024))

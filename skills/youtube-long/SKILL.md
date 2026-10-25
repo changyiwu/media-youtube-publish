@@ -36,7 +36,7 @@ description: YouTube 長片生產線，四種 agent（Claude Code／Codex／Open
 | **OpenCode** | 全域 `draw` 技能（同 Claude） | ` [OpenCode]` |
 | **Antigravity** | 內建 `generate_image` | ` [Antigravity]` |
 
-判斷原則一句話：**有內建生圖就用內建，沒有就用 `draw` 技能**（它自己會選路線）。疊字一律用同層的 `cover` 技能。
+判斷原則一句話：**有內建生圖就用內建，沒有就用 `draw` 技能**（它自己會選路線）。封面輸出（裁切、疊字）一律用同層的 `cover` 技能。
 
 其餘所有步驟四種 agent 完全相同，不要各自發明流程。
 
@@ -45,7 +45,7 @@ description: YouTube 長片生產線，四種 agent（Claude Code／Codex／Open
 ## 路徑與專案契約
 
 1. 本技能在專案內使用：`<PROJECT_ROOT>` 是 `media-youtube-publish/`，技能在 `skills/youtube-long/`。
-2. 同層技能直接引用，不複製：字幕腳本在 `skills/audio-to-srt/scripts/`，封面疊字在 `skills/cover/`。
+2. 同層技能直接引用，不複製：字幕腳本在 `skills/audio-to-srt/scripts/`，封面裁切與疊字在 `skills/cover/`。
 3. 開工前先讀（存在才讀）：`AGENTS.md`、`handoff.md`、`README.md`。
 4. 資料夾：輸入 `raw/<video-id>/`、中間檔 `working/<video-id>/`、交付 `output/<標題> [<Agent>]/`。
 5. 影片、音訊、API key 一律不進 Git。
@@ -143,25 +143,36 @@ Copy-Item -LiteralPath "$Sub/clean.srt" -Destination "$Work/<video-id>.srt" -For
 
 使用者選定後，移除 Windows 不合法字元 `？！：／＼?!:/\<>|"*`、避免以空白或句點結尾，建立 `output/<標題> [<Agent>]/`。**資料夾加後綴、裡面的檔案不加。**
 
-## 4. 封面：先生底圖，再疊字
+## 4. 封面：選路線 → 生圖 → cover 輸出
 
 1. 若這一集已有現成封面且使用者沒要求重做 → 直接沿用。
 2. 讀 `assets/style/cover-style.md`（色票、構圖、字體、禁止事項）與 `assets/style/reference-thumbnails.png`（若有）。
 3. **重新讀 `assets/persona/` 內的人物基準照**——不可拿上一張封面或衍生圖當輸入，誤差會越滾越大。
-4. **生底圖**（不寫字、文字那一角留乾淨）：
+4. **選路線**（細節見 [`cover` 技能〈兩條路線怎麼選〉](../cover/SKILL.md)）：
+   - **A 後製疊字（預設）**：底圖不寫字，再用 `cover.py --text` 疊字。
+   - **B draw 直接生字**：特別企劃要華麗字效時，生圖時連主標一起畫，再用 `cover.py --no-text` 只裁切輸出；**必過 `cover` 的 🛑 錯字檢查關卡**，3 次重生都錯就退回 A。
+   - 使用者沒指定就走 A；`cover-style.md` 沒開放 B 時只能走 A。
+5. **生圖**（A：不寫字、文字那一角留乾淨；B：照 `cover`〈路線 B：生字規則〉把主標畫進圖裡，`draw` 至少 `--quality medium`）：
    - 有內建生圖：把人物基準照當 reference image 傳給內建工具。不支援 reference image 時只能用 prompt 約束人物特徵，並**明確回報這個限制**，不要宣稱像本人。
    - 沒有內建生圖：用全域 `draw` 技能，帶 `--edit "assets/persona/<人物照>.png"`、`--size 1536x1024`，輸出到 `working/<video-id>/cover-base.png`。
    - Prompt 只描述「位置、姿勢、場景、配色」，**不要重新描述五官／髮型／穿著**——那些交給基準照。
    - 沒有人物照時，產不含真人的主題底圖，或請使用者補圖。
-5. **疊字**（照 `cover` 技能）：
+6. **cover 輸出**（照 `cover` 技能）：
 
 ```powershell
+# A 後製疊字
 python "$CoverDir/cover.py" "working/<video-id>/cover-base.png" `
   --text "<6 字內主標>" --font "<OFL 字型>" --corner br `
   --formats yt --outdir "output/<標題> [<Agent>]"
+
+# B 圖裡已有字，只裁切輸出
+python "$CoverDir/cover.py" "working/<video-id>/cover-base.png" `
+  --no-text --focus 0.5,0.5 `
+  --formats yt --outdir "output/<標題> [<Agent>]"
 ```
 
-`--corner` 選不擋到臉的角。用 Read 看一眼確認人物樣貌、主色與文字位置。
+A 的 `--corner` 選不擋到臉的角。用 Read 看一眼確認人物樣貌、主色與文字位置；走 B 要逐字核對主標（錯字檢查關卡），
+並在 `發布資訊.md` 的 AI 揭露註明「封面文字由 AI 生成」。
 
 ## 5. 發布資訊與打包
 
@@ -192,6 +203,7 @@ output/<標題> [<Agent>]/
 - [ ] 影片檔名等於 YouTube 標題、時長合理
 - [ ] SRT 通過 `validate_srt.py`
 - [ ] cover.png 為 1280×720、人物延續基準照、主色正確、字沒擋臉
+- [ ] 封面走 B（draw 生字）時：已逐字核對主標無錯字，AI 揭露已註明封面文字由 AI 生成
 - [ ] 發布資訊.md 照範本結構、各平台都有 AI 揭露、標籤一行可直接貼上
 - [ ] `handoff.md` 已更新本支影片狀態、輸出位置、待審事項、下一步
 

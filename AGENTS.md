@@ -42,7 +42,7 @@ media-youtube-publish/
     ├── youtube-long/   # 長片生產線：去靜音 → 字幕 → 標題 → 封面 → 發布資訊（發布資訊範本正本在這）
     ├── youtube-shorts/ # 長片 → ≤2 分鐘 Shorts
     ├── audio-to-srt/   # 語音轉 SRT（全域，其他專案也用）
-    └── cover/          # 底圖 → 封面（裁切＋疊字；全域，其他媒體專案也用）
+    └── cover/          # 底圖 → 封面（裁切＋選用疊字；全域，其他媒體專案也用）
 ```
 
 ---
@@ -58,7 +58,7 @@ media-youtube-publish/
 | **OpenCode** | 本檔 | 全域 `draw` 技能 | ` [OpenCode]` |
 | **Antigravity** | 本檔 | 內建 `generate_image` | ` [Antigravity]` |
 
-- 一句話：**有內建生圖就用內建，沒有就用全域 `draw` 技能**（它自己選 Codex CLI 代生或 API 路線）；疊字一律用 `cover`
+- 一句話：**有內建生圖就用內建，沒有就用全域 `draw` 技能**（它自己選 Codex CLI 代生或 API 路線）；封面輸出（裁切、疊字）一律用 `cover`
 - 其餘所有步驟四種 Agent 完全一樣——不要各自發明流程、不要為某個 Agent 另開一份技能
 - 後綴用於 A/B 比較不同 Agent 的產出品質；**只有資料夾加後綴，裡面的檔案不加**
 
@@ -71,9 +71,9 @@ media-youtube-publish/
 | 只要影片＋字幕，不要行銷素材 | `youtube-long` 第 0–2 步 |
 | 只想轉 SRT（不剪片） | `skills/audio-to-srt/` |
 | 長片跑完後加碼剪 Shorts | `skills/youtube-shorts/` |
-| 只做封面疊字 | `skills/cover/` |
+| 只做封面（裁切、疊字） | `skills/cover/` |
 
-**腳本只放一份，技能之間直接引用**：`youtube-long` 用 `../audio-to-srt/scripts/` 轉字幕、用 `../cover/` 疊字，
+**腳本只放一份，技能之間直接引用**：`youtube-long` 用 `../audio-to-srt/scripts/` 轉字幕、用 `../cover/` 做封面，
 `youtube-shorts` 用 `../youtube-long/references/` 的範本與行銷規格。四個技能永遠一起放在本專案，引用不會斷；
 **不要再把別的技能的腳本複製一份進來**——副本會悄悄分岔。`preflight.py` 會檢查同層技能在不在。
 
@@ -136,7 +136,11 @@ media-youtube-publish/
 5. 依適配表選生圖路線：
    - **內建生圖（Codex／Antigravity）**：把人物基準照當 reference image 傳給內建工具。若內建工具不支援參考圖，只能用 prompt 約束人物特徵，並**明確回報這個限制**，不要宣稱像本人
    - **沒有內建生圖（Claude Code／OpenCode）**：全域 `draw` 技能，`--edit <人物照>`
-6. 底圖不寫字，最後用 `skills/cover/` 疊字（`--corner` 選不擋臉的角）
+6. 選字的路線（怎麼選見 `skills/cover/SKILL.md`）：
+   - **A 後製疊字（預設）**：底圖不寫字，最後用 `skills/cover/` 疊字（`--corner` 選不擋臉的角）
+   - **B draw 直接生字**：特別企劃要華麗字效時，生圖連主標一起畫，`cover.py --no-text` 只裁切輸出；
+     **必過 🛑 錯字檢查關卡**（逐字核對，最多重生 3 次，仍錯就退回 A），AI 揭露註明封面文字由 AI 生成
+   - 使用者沒指定就走 A；`cover-style.md` 沒開放 B 時只能走 A
 
 優先序：**人物基準照 > 風格指南 > 個別影片的 prompt 變化**。
 `cover-style.md` 與人物照都是個人資料、不進 git（已在 `.gitignore`）；repo 只放範本 `cover-style.example.md`，
