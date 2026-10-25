@@ -29,7 +29,7 @@
 - ffmpeg 與 ffprobe（加入 PATH）
 - auto-editor：`python -m pip install auto-editor`
 - Groq 帳號與 API key（只有字幕步驟需要）
-- 封面：agent 內建生圖，或 `OPENAI_API_KEY` + `openai` 套件（走 `cover-image/draw.py` 時）
+- 封面：agent 內建生圖，或 `OPENAI_API_KEY` + `openai` 套件（走 `scripts/draw.py` 時）
 
 本技能的 Groq 呼叫使用 Python 標準函式庫，不需要安裝 `groq` 套件。
 

@@ -40,6 +40,9 @@ MANIFEST = {
         ("scripts/finalize_subtitles.py", "scripts/finalize_subtitles.py"),
         ("scripts/find_dubious_terms.py", "scripts/find_dubious_terms.py"),
     ],
+    "cover-image": [
+        ("draw.py", "scripts/draw.py"),
+    ],
     "short-video-workflow": [
         ("scripts/add_end_card.py", "scripts/add_end_card.py"),
         ("scripts/burn_subtitles.py", "scripts/burn_subtitles.py"),
@@ -52,6 +55,12 @@ MANIFEST = {
 EXEMPT = {
     "audio-to-srt": {"scripts/test_cross_segment.py"},
 }
+
+# 原始檔不在本 repo、而在隔壁專案的檔案：(本 repo 技能內的路徑, 相對 agents/ 的上游路徑)。
+# 一律改上游再整份覆蓋過來。上游不在（技能裝在全域、或這台沒有那個專案）就略過，不算錯。
+UPSTREAM = [
+    ("cover-image/draw.py", "agent-setup-guide/skills/05-draw/draw.py"),
+]
 
 WORKFLOW_SKILL = "youtube-video-workflow"
 WATCHED_DIRS = ("scripts", "references")
@@ -132,6 +141,23 @@ def check(skills_root: Path, quiet: bool = False) -> int:
                 "（新增後請決定要不要共用：要共用就複製到總控並登記進 MANIFEST，"
                 "不共用就加進 EXEMPT）".format(skill, rel)
             )
+
+    # skills/ -> media-youtube-publish/ -> agents/
+    agents_root = skills_root.parent.parent
+    for local_rel, upstream_rel in UPSTREAM:
+        local = skills_root / local_rel
+        upstream = agents_root / upstream_rel
+        if not local.is_file() or not upstream.is_file():
+            continue
+        checked += 1
+        if sha256(local) != sha256(upstream):
+            problems.append(
+                "[ERR] 與上游不一致：{}  ≠  {}（以上游為準，整份覆蓋過來）".format(
+                    local_rel, upstream_rel
+                )
+            )
+        elif not quiet:
+            print("[OK] {}（= {}）".format(local_rel, upstream_rel))
 
     if skipped_skills and not quiet:
         print("[SKIP] 未找到下列技能，略過：{}".format("、".join(skipped_skills)))

@@ -83,6 +83,9 @@ media-youtube-publish/
 - `preflight.py` 會順帶跑它，不同步時只印 `[WARN]` **不擋關**——副本不同步不影響這台機器跑不跑得動，但會讓產出偷偷用到舊版腳本
 - 要當硬關卡就直接跑 `python skills/youtube-video-workflow/scripts/check_sync.py`，不一致 exit 1
 - 新增或刪除共用檔案時，**同時更新 `check_sync.py` 的 `MANIFEST`**（要共用）或 `EXEMPT`（不共用，例如只在單步驟技能裡的測試）。沒登記會直接讓檢查失敗，這是刻意的
+- **`draw.py` 的原始檔不在本 repo**：是全域 `draw` 技能的 `agents/agent-setup-guide/skills/05-draw/draw.py`。
+  `cover-image/draw.py` 與總控 `scripts/draw.py` 都是它的逐位元副本，**一律改上游再覆蓋過來**，不准在本 repo 就地改；
+  `check_sync.py` 的 `UPSTREAM` 會比對（上游不在這台時略過）
 
 單步驟需求（只想轉字幕、只想去靜音）一律走**本 repo 內的單步驟技能**，跑一次 `skill-sync` 裝到全域後，在任何資料夾都能觸發。**不要為此另開或依賴外部 repo**——`agents/media-audio-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
 

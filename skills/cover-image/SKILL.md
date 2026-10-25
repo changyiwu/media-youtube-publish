@@ -26,6 +26,10 @@ description: 用 OpenAI gpt-image-2 生成或修改圖片（封面、插圖、�
 
 `skills/cover-image/draw.py`（專案內）。若你把本技能裝到全域技能目錄，就用該處的 `draw.py`。
 
+**不要直接改這份。** 它是全域 `draw` 技能的逐位元副本，原始檔在 `agents/agent-setup-guide/skills/05-draw/draw.py`；
+總控 `youtube-video-workflow/scripts/draw.py` 是第二份副本。要改就改上游、再整份覆蓋這兩份，
+`check_sync.py` 會比對三份是否一致（上游不在這台時略過）。
+
 ## 使用方式
 
 ### 生新圖

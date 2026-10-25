@@ -1,6 +1,6 @@
 ---
 name: youtube-video-workflow
-description: 通用的 YouTube 影片自動化生產總控技能，四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用同一份流程。當使用者要求處理 raw 裡的新影片、一次跑完整 YouTube 生產線（剪口播→轉字幕→疑慮字幕確認→標題→封面→metadata→打包→可選短片）、剪口播去靜音、把影片轉 SRT 字幕、產標題候選、做封面、寫 YouTube 描述／社群貼文／SEO 標籤、剪 Shorts 短片，或說「使用 youtube-video-workflow」時使用。封面依執行中的 agent 自動選路：有內建生圖就用內建，沒有才呼叫 cover-image/draw.py。
+description: 通用的 YouTube 影片自動化生產總控技能，四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用同一份流程。當使用者要求處理 raw 裡的新影片、一次跑完整 YouTube 生產線（剪口播→轉字幕→疑慮字幕確認→標題→封面→metadata→打包→可選短片）、剪口播去靜音、把影片轉 SRT 字幕、產標題候選、做封面、寫 YouTube 描述／社群貼文／SEO 標籤、剪 Shorts 短片，或說「使用 youtube-video-workflow」時使用。封面依執行中的 agent 自動選路：有內建生圖就用內建，沒有才呼叫本技能自帶的 scripts/draw.py。
 ---
 
 # youtube-video-workflow：YouTube 影片生產總控（通用版）
@@ -27,9 +27,9 @@ description: 通用的 YouTube 影片自動化生產總控技能，四種 agent�
 
 | Agent | 封面生成路線 | 需要 `OPENAI_API_KEY` | 輸出資料夾後綴 |
 |-------|-------------|----------------------|---------------|
-| **Claude Code** | 呼叫 `skills/cover-image/draw.py`（gpt-image-2） | ✅ | ` [Claude]` |
+| **Claude Code** | 呼叫 `$SkillDir/scripts/draw.py`（gpt-image-2） | ✅ | ` [Claude]` |
 | **Codex** | 用**內建 image 生圖工具**，不要跑 draw.py | ❌ | ` [Codex]` |
-| **OpenCode** | 呼叫 `skills/cover-image/draw.py`（同 Claude 路線） | ✅ | ` [OpenCode]` |
+| **OpenCode** | 呼叫 `$SkillDir/scripts/draw.py`（同 Claude 路線） | ✅ | ` [OpenCode]` |
 | **Antigravity** | 用**內建 `generate_image`**，不要跑 draw.py | ❌ | ` [Antigravity]` |
 
 判斷原則一句話：**你有內建生圖就用內建，沒有才走 draw.py**。短片資料夾後綴則是 ` [<Agent>] (Short)`。
@@ -161,7 +161,7 @@ Copy-Item -LiteralPath "$Sub/clean.srt" -Destination "$Work/<video-id>.srt" -For
 **沒有內建生圖（Claude Code／OpenCode）**：
 
 ```powershell
-python skills/cover-image/draw.py "<prompt>" `
+python "$SkillDir/scripts/draw.py" "<prompt>" `
   --edit "assets/persona/<你的人物照>.png" `
   --size 1536x1024 --quality low `
   --name cover --outdir "output/<標題> [<Agent>]"
