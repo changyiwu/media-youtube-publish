@@ -1,9 +1,9 @@
 ---
-name: short-video-workflow
-description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組成 ≤2 分鐘的短片。當使用者要『剪 short / 做短片 / 抓亮點 / 剪精華 / 做 YouTube Shorts』時請使用此 Skill。會依字幕亮點偵測產 3 個候選版本（痛點型/好奇型/承諾型），等使用者選；也接受使用者直接給時間碼或描述覆寫。輸出走 `output/<短片標題> [<Agent>] (Short)/`（`<Agent>` 為 Claude／Codex／OpenCode／Antigravity），含 16:9 乾淨版/16:9 字幕版/9:16 直式版/srt/txt/cover/發布資訊 七個檔（YouTube Shorts 發布用直式版）。
+name: youtube-shorts
+description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組成 ≤2 分鐘的短片。當使用者要『剪 short / 做短片 / 抓亮點 / 剪精華 / 做 YouTube Shorts』時請使用此 Skill。會依字幕亮點偵測產 3 個候選版本（痛點型/好奇型/承諾型），等使用者選；也接受使用者直接給時間碼或描述覆寫。輸出走 `output/<短片標題> [<Agent>] (Short)/`（`<Agent>` 為 Claude／Codex／OpenCode／Antigravity），含 16:9 乾淨版/16:9 字幕版/9:16 直式版/srt/txt/16:9 與 9:16 封面/發布資訊 八個檔（YouTube Shorts 發布用直式版）。
 ---
 
-# short-video-workflow：長片亮點 → ≤2 分鐘短片
+# youtube-shorts：長片亮點 → ≤2 分鐘 Shorts
 
 ## 何時觸發
 使用者說：
@@ -13,11 +13,11 @@ description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組�
 - 「用 X 段時間碼剪一個短片」
 
 ## 前置條件
-**必須有**已跑完 `youtube-video-workflow` 的長片產物：
+**必須有**已跑完 `youtube-long`（至少到第 2 步字幕）的長片產物：
 - `working/<video-id>/<video-id>.cut.mp4`（剪口播完的版本）
 - `working/<video-id>/<video-id>.srt`（清字完的字幕，時間碼對齊 cut.mp4）
 
-如果這兩個檔案還沒生，先跑長片總控流程。
+如果這兩個檔案還沒生，先跑 `youtube-long`。
 
 ---
 
@@ -27,12 +27,12 @@ description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組�
 |------|------|
 | 影音格式 | **16:9 剪輯為主，另必產一份 9:16 直式版**（YouTube Shorts 發布用）|
 | 直式做法 | `make_vertical.py`：內容等比置中不裁切、上下模糊背景填滿、1080×1920 |
-| 封面尺寸 | **16:9**（與長片共用樣板） |
-| 輸出資料夾 | **`output/<短片標題> [<Agent>] (Short)/`**（後綴同長片，見 `youtube-video-workflow` 適配表）|
+| 封面尺寸 | **16:9** 縮圖＋ 9:16 Shorts 封面（`cover` 技能 `--formats yt,reel`） |
+| 輸出資料夾 | **`output/<短片標題> [<Agent>] (Short)/`**（後綴同長片，見 `youtube-long` 適配表）|
 | 短片時長上限 | **≤ 120 秒** |
 | 開頭 Hook | **≤ 5 秒** |
 | 候選版本數 | **3 個**（不同 hook 策略） |
-| 內部檔案 | 7 個：`<標題>.mp4`（16:9 乾淨）/ `<標題>_字幕版.mp4`（16:9 燒字幕）/ `<標題>_直式9x16.mp4` / `.srt` / `.txt` / `cover.png` / `發布資訊.md` |
+| 內部檔案 | 8 個：`<標題>.mp4`（16:9 乾淨）/ `<標題>_字幕版.mp4`（16:9 燒字幕）/ `<標題>_直式9x16.mp4` / `.srt` / `.txt` / `cover.png` / `cover_9x16.png` / `發布資訊.md` |
 
 ---
 
@@ -111,7 +111,7 @@ description: 從已剪過的長片（cut.mp4 + .srt）擷取亮點片段，組�
 呼叫包裝腳本：
 
 ```bash
-python skills/short-video-workflow/scripts/clip_cut.py \
+python skills/youtube-shorts/scripts/clip_cut.py \
   --input-mp4 "working/<video-id>/<video-id>.cut.mp4" \
   --input-srt "working/<video-id>/<video-id>.srt" \
   --segments "00:00:08.500-00:00:13.200,00:00:45.100-00:01:30.800,00:01:55.000-00:02:05.000" \
@@ -131,7 +131,7 @@ python skills/short-video-workflow/scripts/clip_cut.py \
 在影片的最尾端放置一個 3 秒的「詳細影片請看留言」字卡。
 呼叫包裝腳本：
 ```bash
-python skills/short-video-workflow/scripts/add_end_card.py \
+python skills/youtube-shorts/scripts/add_end_card.py \
   --input-mp4 "working/<video-id>/short-tmp/short.mp4" \
   --output-mp4 "working/<video-id>/short-tmp/short_with_card.mp4"
 ```
@@ -140,7 +140,7 @@ python skills/short-video-workflow/scripts/add_end_card.py \
 2. **燒錄字幕**：
 使用 `burn_subtitles.py` 將 `.srt` 字幕燒錄到影片中：
 ```bash
-python skills/short-video-workflow/scripts/burn_subtitles.py \
+python skills/youtube-shorts/scripts/burn_subtitles.py \
   "working/<video-id>/short-tmp/short_with_card.mp4" \
   "working/<video-id>/short-tmp/short.srt" \
   "working/<video-id>/short-tmp/short_subtitled.mp4"
@@ -150,7 +150,7 @@ python skills/short-video-workflow/scripts/burn_subtitles.py \
 3. **產 9:16 直式版（必做，YouTube Shorts 發布用）**：
 以「已燒字幕版」為輸入轉直式，字幕跟著前景走、不用重燒：
 ```bash
-python skills/short-video-workflow/scripts/make_vertical.py \
+python skills/youtube-shorts/scripts/make_vertical.py \
   "working/<video-id>/short-tmp/short_subtitled.mp4" \
   --out "working/<video-id>/short-tmp/short_916.mp4"
 ```
@@ -186,14 +186,20 @@ python skills/short-video-workflow/scripts/make_vertical.py \
 - 加「SHORT」或「精華」字樣小貼紙作識別（選擇性）
 - 16:9 尺寸與長片同樣板
 
-呼叫方式（依 `youtube-video-workflow` 的 Agent 適配表選路）：
-- **有內建生圖（Codex／Antigravity）**：用內建工具，人物基準照當 reference image，不呼叫 draw.py
-- **沒有內建生圖（Claude Code／OpenCode）**：
-  `python skills/cover-image/draw.py "<prompt>" --edit "assets/persona/<你的人物照>.png" --size 1536x1024 --quality low --name cover --outdir "output/<標題> [<Agent>] (Short)/"`
+做法同 `youtube-long` 第 4 步：先生底圖（有內建生圖用內建；沒有就用全域 `draw` 技能帶 `--edit` 人物照），
+再用同層 `cover` 技能疊字，輸出到 `output/<短片標題> [<Agent>] (Short)/`：
+
+```powershell
+python skills/cover/cover.py "working/<video-id>/short-cover-base.png" `
+  --text "<短標題>" --sub "SHORT" --font "<OFL 字型>" --corner br `
+  --formats yt,reel --outdir "output/<短片標題> [<Agent>] (Short)"
+```
+
+`--formats yt,reel` 同時產 16:9 縮圖與 9:16 的 Shorts 封面（`cover_9x16.png`）。
 
 ### Step 10：寫發布資訊（短片版本）
 
-把 [references/發布資訊範本.md](references/發布資訊範本.md) 複製成 `output/<短片標題> [<Agent>] (Short)/發布資訊.md`，結構照範本（含 AI 揭露、Threads），內容照下列短片玩法寫：
+把 [發布資訊範本.md](../youtube-long/references/發布資訊範本.md) 複製成 `output/<短片標題> [<Agent>] (Short)/發布資訊.md`，結構照範本（含 AI 揭露、Threads），內容照下列短片玩法寫：
 
 1. **YouTube 短描述**（≤ 150 字，前 50 字最關鍵）
 2. **Hashtag 帶**：開頭 3 個 → `#Shorts #<頻道主題>` 一定要有
@@ -210,7 +216,7 @@ python skills/short-video-workflow/scripts/make_vertical.py \
 - [ ] 資料夾名結尾有 ` [<Agent>] (Short)` 後綴
 - [ ] 影片時長 ≤ 120 秒（ffprobe 確認）
 - [ ] 開頭 5 秒內出現 hook 字幕
-- [ ] 7 個檔案齊全（含 `_直式9x16.mp4`）
+- [ ] 8 個檔案齊全（含 `_直式9x16.mp4` 與 `cover_9x16.png`）
 - [ ] 直式版解析度 1080×1920（make_vertical.py 會自動驗證）
 - [ ] cover.png 主色符合 `cover-style.md` 的配色規則
 - [ ] 發布資訊.md 照範本結構、含 `#Shorts` 標籤
@@ -249,7 +255,7 @@ python skills/short-video-workflow/scripts/make_vertical.py \
 ## 檔案結構
 
 ```
-skills/short-video-workflow/
+skills/youtube-shorts/
 ├── SKILL.md
 └── scripts/
     ├── clip_cut.py        # ffmpeg 切片+組片+SRT 重編
@@ -259,6 +265,5 @@ skills/short-video-workflow/
 ```
 
 ## 與其他 Skill 的關係
-- **依賴**：`smart-cut` + `audio-to-srt`（已產 cut.mp4 + srt）
-- **共用**：`cover-image` SOP、`assets/style/cover-style.md`、`assets/persona/`
-- **被呼叫**：`youtube-video-workflow` 的階段 2 會接手本 Skill 的完整流程
+- **依賴**：`youtube-long` 第 1–2 步的產物（cut.mp4 + 清字後 srt）
+- **共用**：全域 `draw`、同層 `cover`、`youtube-long/references/` 的發布資訊範本與 marketing-spec、`assets/style/`、`assets/persona/`

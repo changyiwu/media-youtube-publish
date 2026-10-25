@@ -16,7 +16,8 @@
 ## 目標與路線圖
 
 - [x] 階段一：把模板專案改成自己的版本（移除原作者私人資料、三份 agent 專屬技能合併成一份通用技能）
-- [ ] 階段二：完成個人化（人物基準照、封面風格指南、字幕詞彙表、API key）
+- [x] 技能整併：七個技能收成 `youtube-long`、`youtube-shorts`、`audio-to-srt`、`cover`，腳本只留一份；`audio-to-srt`、`cover` 裝到全域
+- [ ] 階段二：完成個人化（人物基準照、封面風格指南、字幕詞彙表〈頻道／人物〉佔位符、封面用 OFL 字型；Groq key 選填）
 - [ ] 階段三：跑完第一支長片，驗證整條生產線
 - [ ] 階段四：驗證短片（Shorts）流程
 
@@ -38,13 +39,10 @@ media-youtube-publish/
 │   ├── persona/      # 人物基準照（封面必用，不進 git）
 │   └── style/        # 頻道封面風格指南
 └── skills/
-    ├── youtube-video-workflow/      # 總控：一次跑完整條線（自帶全部腳本）
-    ├── smart-cut/                   # 單步驟：去靜音剪口播
-    ├── audio-to-srt/                # 單步驟：語音轉 SRT
-    ├── video-editing-and-subtitles/ # 剪輯＋字幕精修，不做行銷素材
-    ├── short-video-workflow/        # 長片 → ≤2 分鐘 Shorts
-    ├── cover-image/                 # 封面生圖（沒有內建生圖的 Agent 才用）
-    └── cover/                       # 底圖 → 封面（裁切＋疊字），唯一裝到全域的技能
+    ├── youtube-long/   # 長片生產線：去靜音 → 字幕 → 標題 → 封面 → 發布資訊（發布資訊範本正本在這）
+    ├── youtube-shorts/ # 長片 → ≤2 分鐘 Shorts
+    ├── audio-to-srt/   # 語音轉 SRT（全域，其他專案也用）
+    └── cover/          # 底圖 → 封面（裁切＋疊字；全域，其他媒體專案也用）
 ```
 
 ---
@@ -53,52 +51,43 @@ media-youtube-publish/
 
 ### Agent 適配表（唯一需要分辨 Agent 的地方）
 
-| Agent | 入口檔 | 封面生成 | 需要 `OPENAI_API_KEY` | 輸出資料夾後綴 |
-|-------|--------|---------|----------------------|---------------|
-| **Claude Code** | `CLAUDE.md` → 本檔 | `skills/cover-image/draw.py` | ✅ | ` [Claude]` |
-| **Codex** | 本檔 | 內建 image 生圖工具 | ❌ | ` [Codex]` |
-| **OpenCode** | 本檔 | `skills/cover-image/draw.py` | ✅ | ` [OpenCode]` |
-| **Antigravity** | 本檔 | 內建 `generate_image` | ❌ | ` [Antigravity]` |
+| Agent | 入口檔 | 封面底圖 | 輸出資料夾後綴 |
+|-------|--------|---------|---------------|
+| **Claude Code** | `CLAUDE.md` → 本檔 | 全域 `draw` 技能 | ` [Claude]` |
+| **Codex** | 本檔 | 內建 image 生圖工具 | ` [Codex]` |
+| **OpenCode** | 本檔 | 全域 `draw` 技能 | ` [OpenCode]` |
+| **Antigravity** | 本檔 | 內建 `generate_image` | ` [Antigravity]` |
 
-- 一句話：**有內建生圖就用內建，沒有才跑 `draw.py`**
+- 一句話：**有內建生圖就用內建，沒有就用全域 `draw` 技能**（它自己選 Codex CLI 代生或 API 路線）；疊字一律用 `cover`
 - 其餘所有步驟四種 Agent 完全一樣——不要各自發明流程、不要為某個 Agent 另開一份技能
 - 後綴用於 A/B 比較不同 Agent 的產出品質；**只有資料夾加後綴，裡面的檔案不加**
 
 ### Skills 用哪一個
 
-| Skill | 何時用 |
+| 使用者要的 | 用哪個 |
 |-------|--------|
-| `skills/youtube-video-workflow/` | **主要入口**：一次跑完整條生產線 |
-| `skills/smart-cut/` | 只想去靜音 |
-| `skills/audio-to-srt/` | 只想轉 SRT |
-| `skills/video-editing-and-subtitles/` | 只要影片＋字幕，不要行銷素材 |
-| `skills/short-video-workflow/` | 長片跑完後加碼剪 Shorts |
-| `skills/cover-image/` | Agent 沒有內建生圖時才用：生封面底圖 |
-| `skills/cover/` | 底圖做成 YouTube／Reels／貼文封面（裁切、疊大字、清 metadata）；不生圖 |
+| 一次跑完整支長片 | `skills/youtube-long/`（**主要入口**） |
+| 只想去靜音 | `youtube-long` 第 0–1 步 |
+| 只要影片＋字幕，不要行銷素材 | `youtube-long` 第 0–2 步 |
+| 只想轉 SRT（不剪片） | `skills/audio-to-srt/` |
+| 長片跑完後加碼剪 Shorts | `skills/youtube-shorts/` |
+| 只做封面疊字 | `skills/cover/` |
 
-總控技能是**自帶腳本的可攜版本**，跑生產線時用它自己 `scripts/` 內的腳本；其餘技能是拆開的單步驟版本。兩邊的 `scripts/` 與 `references/` 內容逐位元相同，改其中一邊**必須**同步另一邊。
+**腳本只放一份，技能之間直接引用**：`youtube-long` 用 `../audio-to-srt/scripts/` 轉字幕、用 `../cover/` 疊字，
+`youtube-shorts` 用 `../youtube-long/references/` 的範本與行銷規格。四個技能永遠一起放在本專案，引用不會斷；
+**不要再把別的技能的腳本複製一份進來**——副本會悄悄分岔。`preflight.py` 會檢查同層技能在不在。
 
-**不要為了消滅重複，把總控改成引用 `../<單步驟技能>/scripts/`。** 技能可能被單獨複製到別處（另一台電腦、某個 Agent 的全域目錄），只帶總控沒帶單步驟技能時，跨資料夾引用會整條線壞掉——可攜正是選這個設計的理由。重複是刻意付的代價，用下面的檢查把代價壓住。
-
-`scripts/check_sync.py` 驗證這份重複：逐檔比對 sha256，並抓「單步驟技能新增了檔案卻沒登記」的清單漂移。
-
-- `preflight.py` 會順帶跑它，不同步時只印 `[WARN]` **不擋關**——副本不同步不影響這台機器跑不跑得動，但會讓產出偷偷用到舊版腳本
-- 要當硬關卡就直接跑 `python skills/youtube-video-workflow/scripts/check_sync.py`，不一致 exit 1
-- 新增或刪除共用檔案時，**同時更新 `check_sync.py` 的 `MANIFEST`**（要共用）或 `EXEMPT`（不共用，例如只在單步驟技能裡的測試）。沒登記會直接讓檢查失敗，這是刻意的
-- **`draw.py` 的原始檔不在本 repo**：是全域 `draw` 技能的 `agents/agent-setup-guide/skills/05-draw/draw.py`。
-  `cover-image/draw.py` 與總控 `scripts/draw.py` 都是它的逐位元副本，**一律改上游再覆蓋過來**，不准在本 repo 就地改；
-  `check_sync.py` 的 `UPSTREAM` 會比對（上游不在這台時略過）
-
-**技能留在專案內使用，不裝到全域**：在本專案開 session 時，Agent 依上面〈Skills 用哪一個〉直接讀 `skills/<技能>/SKILL.md`，四種 Agent 都適用。
-代價是不會依對話自動觸發、也不能在別的資料夾用——做影片就在本專案做。單步驟需求（只想轉字幕、只想去靜音）同樣在本專案走單步驟技能。
+**技能在專案內使用**：在本專案開 session 時，Agent 依上表直接讀 `skills/<技能>/SKILL.md`，四種 Agent 都適用。
+代價是不會依對話自動觸發、也不能在別的資料夾用——做影片就在本專案做。
 **不要為此另開或依賴外部 repo**——`agents/media-audio-srt` 是本 repo 字幕技能的前身，程式改良（dc4cb12）與個人化詞彙表都已併入，該專案待退役，不得反向依賴。
 
-**唯一例外是 `cover`**：media-short-film、media-3d-studio、media-music-video、media-video-specs 也要做封面，所以只把它用全域 `skill-sync` 裝到四個 Agent 的全域目錄。
-改了 `skills/cover/` 就要再跑一次同步；其他技能不要裝到全域（`skill-sync` 會把「來源有、但都沒裝」當成刻意不裝，不會自動補）。
+**`audio-to-srt` 與 `cover` 例外，用全域 `skill-sync` 裝到四個 Agent 的全域目錄**：其他專案也要轉字幕、做封面。
+改了這兩個技能就要再跑一次同步；`youtube-long`、`youtube-shorts` 不要裝到全域（`skill-sync` 會把「來源有、但都沒裝」當成刻意不裝，不會自動補）。
+別的專案用 `audio-to-srt` 時，詞彙表用參數換成該專案的，**不要改本 repo 的 `vocabulary.md`／`replacements.md`**（見該技能〈在其他專案使用〉）。
 
 ### 標準工作流
 
-> 完整細節在 `skills/youtube-video-workflow/SKILL.md`，這裡只是骨架。
+> 完整細節在 `skills/youtube-long/SKILL.md`，這裡只是骨架。
 
 1. **收件**：素材在 `raw/<video-id>/`（video-id 是暫時的工作識別，例如 `20260822-agent-intro`）
 2. **建工作空間**：`working/<video-id>/` 與 `working/<video-id>/_subtitles/`
@@ -107,11 +96,11 @@ media-youtube-publish/
 5. **生 10 個標題候選** → `working/<video-id>/titles.md` → **🛑 等使用者挑**
 6. **選定後**：清洗標題成合法資料夾名（去掉 `？！：／＼?!:/\<>|"*`）→ 建 `output/<標題> [<Agent>]/`，平行產出封面與 `發布資訊.md`
 7. **打包**：`<標題>.mp4`／`.srt`／`.txt`／`cover.png`／`發布資訊.md` 五件套
-8. **（可選）短片**：接 `skills/short-video-workflow/`，輸出 `output/<短片標題> [<Agent>] (Short)/`，7 件套（含 9:16 直式版）
+8. **（可選）短片**：接 `skills/youtube-shorts/`，輸出 `output/<短片標題> [<Agent>] (Short)/`，8 件套（含 9:16 直式版與 9:16 封面）
 9. **更新 `handoff.md`**
 
-`發布資訊.md` **照 `references/發布資訊範本.md` 的結構寫**（YouTube／FB／IG／Threads 文案、AI 揭露、可直接貼進標籤欄的一行），口播的寫法照 `references/marketing-spec.md`。
-範本是五個媒體專案共用的，**正本就是本 repo 的 `skills/youtube-video-workflow/references/發布資訊範本.md`**：要改就改正本，再整份覆蓋到 `skills/short-video-workflow/references/` 與 media-short-film、media-3d-studio、media-music-video、media-video-specs 的 `templates/`；`check_sync.py` 的 `MANIFEST` 與 `DOWNSTREAM` 會逐一比對。其他專案的副本不准就地改。
+`發布資訊.md` **照 `skills/youtube-long/references/發布資訊範本.md` 的結構寫**（YouTube／FB／IG／Threads 文案、AI 揭露、可直接貼進標籤欄的一行），口播的寫法照同資料夾的 `marketing-spec.md`。
+範本是五個媒體專案共用的，**正本就是本 repo 這一份**：要改就改正本，再整份覆蓋到 media-short-film、media-3d-studio、media-music-video、media-video-specs 的 `templates/`；`skills/youtube-long/scripts/check_sync.py` 會逐一比對（`preflight.py` 順帶跑，不一致只 `[WARN]`）。其他專案的副本不准就地改。
 
 ### 三個不准跳過的 STOP 關卡
 
@@ -126,7 +115,7 @@ media-youtube-publish/
 - 清字只改文字，**不動時間碼、不增刪段落**
 - 短片切點一律對齊字幕段落邊界，**不准切到一句話中間**
 - **每次生封面都重新讀原始人物基準照**，不得從上一張封面或衍生圖延續人物（誤差會越滾越大）
-- 詞彙機械替換一律改 `references/replacements.md`，**不准把規則寫回程式碼**
+- 詞彙機械替換一律改 `skills/audio-to-srt/references/replacements.md`，**不准把規則寫回程式碼**
 - **中文替換規則不准寫可能出現在正常語句裡的字串**（中文沒有詞邊界可言）；需要看語境的修正留給清字階段。
   不得已的例外要在 `replacements.md` 就地標警語說明何時該停用
 - 英文替換若是「正確詞裡含有待替換字串」（`Cloudflare`、`Google Cloud`），加進 `replacements.md` 的〈保護詞〉，
@@ -146,7 +135,8 @@ media-youtube-publish/
 4. 依 `cover-style.md` 的主題配色規則決定主色
 5. 依適配表選生圖路線：
    - **內建生圖（Codex／Antigravity）**：把人物基準照當 reference image 傳給內建工具。若內建工具不支援參考圖，只能用 prompt 約束人物特徵，並**明確回報這個限制**，不要宣稱像本人
-   - **沒有內建生圖（Claude Code／OpenCode）**：`skills/cover-image/draw.py --edit <人物照>`
+   - **沒有內建生圖（Claude Code／OpenCode）**：全域 `draw` 技能，`--edit <人物照>`
+6. 底圖不寫字，最後用 `skills/cover/` 疊字（`--corner` 選不擋臉的角）
 
 優先序：**人物基準照 > 風格指南 > 個別影片的 prompt 變化**。
 `assets/` 目前是模板狀態，第一次使用前先換成自己的（見 `SETUP.md`）。
@@ -159,7 +149,7 @@ media-youtube-publish/
   2. 腳本一開始就確認套件在不在，沒裝立刻停下並印出安裝指令，不准做到一半才 import 失敗
   3. 寫進 `SETUP.md`〈系統前置〉表格
   標準庫做得到、難度差不多的仍優先用標準庫（每多一個套件，每台電腦、每個 Python 都要多裝一次）。
-  目前登記的：auto-editor、faster-whisper／openai-whisper（專屬檢查）、pillow、openai（`OPTIONAL_PACKAGES`）
+  目前登記的：auto-editor、faster-whisper／openai-whisper（專屬檢查）、pillow（`OPTIONAL_PACKAGES`）。封面生圖走全域 `draw` 技能，它的套件由它自己管
 - 維持 **Python 3.9+ 相容**（別「順手現代化」成 `Path | None` 這類 3.10 語法）
 - 目標平台以 **Windows** 為主：直接呼叫 `whisper` CLI 時一律加 `PYTHONUTF8=1` 與 `-X utf8`，否則 cp950 寫不了繁中；
   腳本寫檔一律明確指定 `encoding="utf-8"`
@@ -208,7 +198,7 @@ media-youtube-publish/
 
 ## Claude Code 專屬
 
-- **封面走 API 路線**：Claude Code 沒有內建生圖，一律跑 `skills/cover-image/draw.py`，
-  需要 `OPENAI_API_KEY`（環境變數或 `~/.openai.env`）。輸出資料夾後綴 ` [Claude]`。
+- **封面底圖走全域 `draw` 技能**：Claude Code 沒有內建生圖，`draw` 會優先找已登入的 Codex CLI 代生，
+  沒有才走 API（需要 `OPENAI_API_KEY`，環境變數或 `~/.openai.env`）。輸出資料夾後綴 ` [Claude]`。
 - **中括號路徑**：PowerShell 會把 `output/<標題> [Claude]/` 的中括號當萬用字元，
   檔案操作要用 `-LiteralPath` 或單引號；Bash 直接雙引號即可。

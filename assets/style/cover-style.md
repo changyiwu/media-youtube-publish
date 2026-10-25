@@ -164,7 +164,7 @@ Read assets/style/cover-style.md（本檔）
   → 重新 Read assets/persona/<你的人物照>.png
   → 依主題配色規則決定主色
   → 填好 prompt
-  → 依 agent 選路：內建生圖工具，或 skills/cover-image/draw.py --edit <人物照>
+  → 依 agent 選路：內建生圖工具，或全域 draw 技能 --edit <人物照>；底圖不寫字，再用 skills/cover/ 疊字
 ```
 
 `--edit` 一次只吃一張輸入圖，所以參考圖只能傳人物基準照；風格靠 prompt 貼近本檔描述來維持。

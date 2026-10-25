@@ -15,7 +15,12 @@ from pathlib import Path
 # 本地 Whisper 二擇一、auto-editor 走 CLI，判斷方式不同，各自有專屬檢查。
 OPTIONAL_PACKAGES = [
     ("PIL", "pillow", "封面裁切疊字（skills/cover/cover.py）"),
-    ("openai", "openai", "封面生圖（draw.py，只有 Claude Code／OpenCode 需要）"),
+]
+
+# youtube-long 直接引用的同層技能（不再各帶一份腳本），缺了整條線跑不動
+SIBLING_SKILLS = [
+    ("audio-to-srt", "scripts/transcribe_local.py", "字幕管線"),
+    ("cover", "cover.py", "封面疊字"),
 ]
 
 
@@ -104,10 +109,23 @@ def optional_packages_status() -> None:
             print(f"[WARN] 沒有 {package}：{purpose}無法使用；需要時執行 python -m pip install {package}")
 
 
-def sync_status() -> bool:
-    """檢查總控自帶的可攜副本是否與單步驟技能一致。
+def sibling_skills_status() -> bool:
+    """同層技能在不在：youtube-long 用 ../<技能>/ 的腳本，只複製本技能出去會整條線斷掉。"""
+    skills_root = Path(__file__).resolve().parents[2]
+    ok = True
+    for skill, rel, purpose in SIBLING_SKILLS:
+        if (skills_root / skill / rel).is_file():
+            print(f"[OK] 同層技能 {skill}：{purpose}")
+        else:
+            print(f"[ERR] 找不到同層技能 {skill}（{purpose}）：{skills_root / skill}")
+            ok = False
+    return ok
 
-    刻意只警告、不擋關：副本不同步會讓產出偷偷用到舊版腳本，但不影響「這台機器跑不跑得動」，
+
+def sync_status() -> bool:
+    """檢查發布資訊範本在其他媒體專案的副本是否與正本一致。
+
+    刻意只警告、不擋關：副本不同步影響的是其他專案，不影響「這台機器跑不跑得動」，
     而 preflight 判定的是後者。要當硬關卡時直接跑 check_sync.py（不一致會 exit 1）。
     """
     try:
@@ -118,7 +136,7 @@ def sync_status() -> bool:
 
     skills_root = Path(__file__).resolve().parents[2]
     if check(skills_root, quiet=True) != 0:
-        print("[WARN] 上列副本不同步；剪輯仍可執行，但流程可能用到舊版腳本")
+        print("[WARN] 上列範本副本不同步；本專案照常可跑，但其他媒體專案會用到舊範本")
         return False
     return True
 
@@ -134,10 +152,11 @@ def main() -> int:
     editor_ok = auto_editor_status()
     local_ok = local_whisper_status()
     groq_ok = groq_key_status(needed=not local_ok)
+    siblings_ok = sibling_skills_status()
     optional_packages_status()
     sync_status()
 
-    required_ok = python_ok and ffmpeg_ok and ffprobe_ok and editor_ok
+    required_ok = python_ok and ffmpeg_ok and ffprobe_ok and editor_ok and siblings_ok
     if required_ok:
         if groq_ok or local_ok:
             print("[OK] 剪輯與字幕環境可用")

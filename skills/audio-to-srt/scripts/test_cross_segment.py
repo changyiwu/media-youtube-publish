@@ -30,10 +30,7 @@ def _load(name, path):
 
 apply_vocab = _load("apply_vocab", HERE / "apply_vocab.py")
 validate_srt = _load("validate_srt", HERE / "validate_srt.py")
-finalize = _load(
-    "finalize_subtitles",
-    HERE.parent.parent / "video-editing-and-subtitles" / "scripts" / "finalize_subtitles.py",
-)
+finalize = _load("finalize_subtitles", HERE / "finalize_subtitles.py")
 
 
 def make_srt(blocks, newline="\n"):

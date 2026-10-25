@@ -19,7 +19,7 @@
 2. 到 `assets/style/cover-style.md` 把「人物（Persona）」段的 `<你的人物照>` 換成實際檔名
 3. 生封面時把這張當 reference image：
    - 有內建生圖的 agent（Codex／Antigravity）→ 直接傳給內建工具
-   - 沒有內建生圖的 agent（Claude Code／OpenCode）→ `draw.py --edit assets/persona/<檔名>.png`
+   - 沒有內建生圖的 agent（Claude Code／OpenCode）→ 全域 `draw` 技能 `--edit assets/persona/<檔名>.png`
 
 ## 為什麼用參考圖而不是純文字描述？
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "YouTube 長片生產線"
+  short_description: "去靜音、本地 Whisper 字幕、標題、封面、發布資訊，一次跑完並打包上架素材。"
+  default_prompt: "使用 youtube-long 處理 raw 裡的新影片。"

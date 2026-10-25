@@ -1,9 +1,12 @@
 ---
 name: audio-to-srt
-description: 音訊/影片檔自動生成乾淨 SRT 字幕檔。當使用者要「把音訊轉字幕」「做 SRT」「語音轉文字 + 時間碼」「影片上字幕」時請一定要使用此技能。兩條路線同用 Whisper large-v3-turbo、同樣 word-level 時間碼：本地 faster-whisper（預設，音訊不離開本機）或 Groq（雲端備援）。逐段清字並嚴守時間碼對齊。四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用。
+description: 音訊/影片檔自動生成乾淨 SRT 字幕檔。當使用者要「把音訊轉字幕」「做 SRT」「語音轉文字 + 時間碼」「影片上字幕」時請一定要使用此技能。兩條路線同用 Whisper large-v3-turbo、同樣 word-level 時間碼：本地 faster-whisper（預設，音訊不離開本機）或 Groq（雲端備援）。疑慮術語列給使用者確認、逐段清字並嚴守時間碼對齊。可在任何專案使用（詞彙表可換成該專案的）。四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用。
 ---
 
 # audio-to-srt：音訊 → 乾淨 SRT
+
+原始檔在 `agents/media-youtube-publish/skills/audio-to-srt/`，用 `skill-sync` 裝到全域給各專案共用；要改就改原始檔再同步，不要改全域副本。
+下文的 `<本技能目錄>` 指這份 `SKILL.md` 所在資料夾（專案內是 `skills/audio-to-srt/`，全域是各 Agent 的技能目錄）。
 
 ## 何時觸發
 使用者提供音訊/影片檔（mp3/wav/m4a/mp4/mov/mkv）並要求：
@@ -54,7 +57,7 @@ python -m pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"
 
 **本地（預設）**：
 ```bash
-python "%USERPROFILE%/.claude/skills/audio-to-srt/scripts/transcribe_local.py" \
+python "<本技能目錄>/scripts/transcribe_local.py" \
   "輸入檔.mp4" \
   --out _subtitles/輸入檔.raw.json
 ```
@@ -65,7 +68,7 @@ python "%USERPROFILE%/.claude/skills/audio-to-srt/scripts/transcribe_local.py" \
 
 **Groq（備援）**：
 ```bash
-python ".../scripts/transcribe_groq.py" \
+python "<本技能目錄>/scripts/transcribe_groq.py" \
   "輸入檔.mp4" \
   --out _subtitles/輸入檔.raw.json
 ```
@@ -77,7 +80,7 @@ Groq 上限 25 MB，超過會吐 **502 Bad Gateway**（Cloudflare 擋掉）。�
 
 ### Step 5：依 word-level 時間碼重新斷句 → raw SRT
 ```bash
-python ".../scripts/resegment.py" \
+python "<本技能目錄>/scripts/resegment.py" \
   _subtitles/輸入檔.raw.json \
   --audio "輸入檔.mp3" \
   --out _subtitles/輸入檔.raw.srt
@@ -100,7 +103,7 @@ python ".../scripts/resegment.py" \
 
 ### Step 6：套用詞彙修正（機械式替換）
 ```bash
-python ".../scripts/apply_vocab.py" \
+python "<本技能目錄>/scripts/apply_vocab.py" \
   _subtitles/輸入檔.raw.srt \
   --out _subtitles/輸入檔.vocab.srt
 ```
@@ -120,11 +123,23 @@ python ".../scripts/apply_vocab.py" \
 
 **只動文字行，時間碼絕不動。**
 
+### Step 6.5：🛑 疑慮術語確認（不准跳過）
+```bash
+python "<本技能目錄>/scripts/find_dubious_terms.py"   _subtitles/輸入檔.vocab.srt   --out _subtitles/dubious-terms.md   --terms "專有名詞1,專有名詞2"        # 選用；不給就用腳本內建的清單
+```
+讀完整 `vocab.srt` 與 `dubious-terms.md`。只修正能從上下文確定的項目；**不確定的人名、產品名、縮寫、數字，
+連段號、原文、建議一起列給使用者，然後停下**，不准自己猜。
+
 ### Step 7：逐段精修（由 agent 親自讀、親自改）
 - 讀 `輸入檔.vocab.srt`
 - 依 `references/cleanup_rules.md` 逐段清理（修標點、刪贅詞）
 - 每段只改第 3 行之後的文字
 - 產出 `_subtitles/輸入檔.clean.srt`
+
+使用者確認的更正可以用腳本套用（多個 `--replace`；`段號:舊->新` 只改那一段，避免誤傷，例如 Gemini 裡的 Gem）：
+```bash
+python "<本技能目錄>/scripts/finalize_subtitles.py"   _subtitles/輸入檔.vocab.srt   --out _subtitles/輸入檔.clean.srt   --replace "舊字->新字" --replace "390:AGE->Agent"
+```
 
 **清字檢查清單：**
 - [ ] 段數是否等於 vocab.srt？（不可增減）
@@ -133,7 +148,7 @@ python ".../scripts/apply_vocab.py" \
 
 ### Step 8：驗證
 ```bash
-python ".../scripts/validate_srt.py" \
+python "<本技能目錄>/scripts/validate_srt.py" \
   --raw _subtitles/輸入檔.vocab.srt \
   --clean _subtitles/輸入檔.clean.srt
 ```
@@ -141,7 +156,7 @@ python ".../scripts/validate_srt.py" \
 
 ### Step 9：產出純文字稿
 ```bash
-python ".../scripts/srt_to_txt.py" \
+python "<本技能目錄>/scripts/srt_to_txt.py" \
   _subtitles/輸入檔.clean.srt \
   --out 輸入檔.txt
 ```
@@ -167,13 +182,26 @@ skills/audio-to-srt/
 │   ├── transcribe_local.py       # 本地 Whisper STT，產同格式 JSON
 │   ├── resegment.py              # 依 word-level 時間碼重新斷句
 │   ├── apply_vocab.py            # 詞彙機械替換（只動文字行）
+│   ├── find_dubious_terms.py     # 列出疑慮術語段落（Step 6.5）
+│   ├── finalize_subtitles.py     # 套用使用者確認的更正（可限定段號）
 │   ├── srt_to_txt.py             # SRT → 純文字稿
-│   └── validate_srt.py           # 時間碼驗證
+│   ├── validate_srt.py           # 時間碼驗證
+│   └── test_cross_segment.py     # 跨段替換與驗證的回歸測試
 └── references/
     ├── cleanup_rules.md          # 清字規則（逐段不跨段）
     ├── replacements.md           # 機械替換規則＋保護詞（apply_vocab.py 讀這份）
     └── vocabulary.md             # 自訂詞彙表
 ```
+
+## 在其他專案使用：換成該專案的詞彙
+
+`references/` 的詞彙表與替換規則是 media-youtube-publish 頻道用的（口播常講的工具名、人名）。別的專案**不要改這幾份**，改用參數指到自己的檔案：
+
+| 用途 | 參數 |
+|---|---|
+| Whisper 提示詞彙（轉錄時） | `transcribe_local.py`／`transcribe_groq.py` 的 `--vocab <自己的 vocabulary.md>` 或 `--prompt "<詞彙>"` |
+| 機械替換規則 | `apply_vocab.py --rules <自己的 replacements.md>`；個人通用規則放 `~/.audio-to-srt/replacements.md` |
+| 疑慮術語清單 | `find_dubious_terms.py --terms "詞1,詞2"` |
 
 ## 路線選擇決策樹
 

@@ -15,7 +15,7 @@
 ```
 raw/<video-id>/source.mp4
     │
-    ├─ smart-cut        → 去靜音（auto-editor，自動處理 VFR）
+    ├─ youtube-long     → 去靜音（auto-editor，自動處理 VFR）
     ├─ audio-to-srt     → SRT + 純文字（本地 Whisper，Groq 備援）
     ├─ 🛑 疑慮術語確認  → 不確定的專有名詞列給你勘誤
     ├─ 🛑 10 個標題候選 → 等你挑一個
@@ -24,10 +24,10 @@ raw/<video-id>/source.mp4
                      ├── <標題>.mp4
                      ├── <標題>.srt
                      ├── <標題>.txt
-                     ├── cover.png      ← 人物基準照 + 頻道風格
+                     ├── cover.png      ← draw 生底圖（人物基準照 + 頻道風格）→ cover 疊字
                      └── 發布資訊.md    ← YouTube 說明欄 / 社群貼文 / 標籤
 
-（可選）短片模式 → output/<短片標題> [<Agent>] (Short)/  含 9:16 直式版，共 7 檔
+（可選）youtube-shorts → output/<短片標題> [<Agent>] (Short)/  含 9:16 直式版與 9:16 封面，共 8 檔
 ```
 
 ## 對 agent 的入口
@@ -44,14 +44,13 @@ raw/<video-id>/source.mp4
 
 | Skill | 用途 |
 |-------|------|
-| [`youtube-video-workflow`](./skills/youtube-video-workflow/SKILL.md) | **主要入口** — 一次跑完整條生產線，自帶全部腳本 |
-| [`smart-cut`](./skills/smart-cut/SKILL.md) | 單步驟：去靜音剪口播 |
-| [`audio-to-srt`](./skills/audio-to-srt/SKILL.md) | 單步驟：語音轉 SRT |
-| [`video-editing-and-subtitles`](./skills/video-editing-and-subtitles/SKILL.md) | 只要影片＋字幕，不要行銷素材 |
-| [`short-video-workflow`](./skills/short-video-workflow/SKILL.md) | 長片 → ≤2 分鐘 Shorts |
-| [`cover-image`](./skills/cover-image/SKILL.md) | 封面生圖（agent 沒有內建生圖時才用） |
+| [`youtube-long`](./skills/youtube-long/SKILL.md) | **主要入口** — 長片一條龍；只去靜音、只要影片＋字幕也走這個（跑到第幾步就停） |
+| [`youtube-shorts`](./skills/youtube-shorts/SKILL.md) | 長片 → ≤2 分鐘 Shorts |
+| [`audio-to-srt`](./skills/audio-to-srt/SKILL.md) | 語音轉 SRT（也裝到全域給其他專案用） |
+| [`cover`](./skills/cover/SKILL.md) | 底圖 → 封面（裁切＋疊字；也裝到全域） |
 
-技能留在專案內使用（Agent 依 `AGENTS.md` 直接讀 `skills/<技能>/SKILL.md`），不裝到全域；只有 `skills/cover/` 用 `skill-sync` 裝到全域，給其他媒體專案做封面。
+技能在專案內使用（Agent 依 `AGENTS.md` 直接讀 `skills/<技能>/SKILL.md`），腳本只放一份、技能之間直接引用。
+`audio-to-srt` 與 `cover` 另用 `skill-sync` 裝到全域；封面底圖用全域的 `draw` 技能。
 
 ## 個人化資產
 
@@ -63,7 +62,7 @@ raw/<video-id>/source.mp4
 ## 對人的快速操作
 
 1. 把影片丟進 `raw/<video-id>/`
-2. 跟 agent 說：「使用 youtube-video-workflow 處理 `raw/<video-id>`」
+2. 跟 agent 說：「使用 youtube-long 處理 `raw/<video-id>`」
 3. agent 跑到「疑慮術語」與「標題候選」會**停下來等你**
 4. 你拍板後，agent 繼續產封面與文案
 5. 成品在 `output/<標題> [<Agent>]/`

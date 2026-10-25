@@ -7,14 +7,14 @@
 
 ## 0. 這條線在做什麼
 
-1. **smart-cut** — auto-editor 自動剪掉沒講話的片段（去靜音，內建 VFR 防黑畫面）
+1. **去靜音** — auto-editor 自動剪掉沒講話的片段（去靜音，內建 VFR 防黑畫面）
 2. **audio-to-srt** — 本地 Whisper（或 Groq）轉成乾淨 SRT，逐段清字 + 疑慮術語人工勘誤
 3. **10 個標題候選** — 停下等你挑
-4. **平行產出** — 封面圖（人物基準照 + 頻道風格）、YouTube 描述、社群貼文、SEO 標籤
+4. **平行產出** — 封面圖（`draw` 生底圖 → `cover` 疊字）、YouTube 描述、社群貼文、SEO 標籤
 5. **打包** — 影片 + 字幕 + 純文字 + 封面 + 發布資訊，放進 `output/<標題> [<Agent>]/`
 6. **（可選）短片** — 從長片字幕抓亮點剪 ≤2 分鐘 Shorts，含 9:16 直式版
 
-一次跑完整條線：對 agent 說「使用 `youtube-video-workflow` 處理 `raw/<video-id>`」。
+一次跑完整條線：對 agent 說「使用 `youtube-long` 處理 `raw/<video-id>`」。
 
 ---
 
@@ -26,11 +26,11 @@
 | ffmpeg / ffprobe | 影音處理 | `winget install Gyan.FFmpeg`（Win）／`brew install ffmpeg`（Mac） |
 | auto-editor | 去靜音剪輯 | `pip install auto-editor` |
 | faster-whisper | 本地字幕（預設路線） | `pip install faster-whisper`；有 NVIDIA GPU 再加 `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` |
-| openai（Python SDK） | 封面生圖（只有 Claude Code／OpenCode 需要） | `pip install openai` |
 | Pillow | 封面裁切疊字（`skills/cover/`） | `pip install pillow` |
-
-> 第三方套件採登記制（見 `AGENTS.md`〈相容性〉）：表上每個套件都由 `preflight.py` 在開工前檢查。
+| 全域 `draw` 技能 | 封面底圖（只有 Claude Code／OpenCode 需要；套件由它自己管） | agent-setup-guide 的 #05 生圖 |
 | Git | 版控（選用） | git-scm.com |
+
+> 第三方套件採登記制（見 `AGENTS.md`〈相容性〉）：表上的 Python 套件都由 `preflight.py` 在開工前檢查。
 
 > 第一次跑本地字幕會下載約 1.6 GB 的 large-v3-turbo 模型。沒有 GPU 也能跑（CPU，較慢）；
 > 不想裝本地引擎就改用 Groq（見下節），Groq 呼叫用標準函式庫，**不需要**裝 `groq` 套件。
@@ -46,9 +46,9 @@
 
 > **不要**把 key 檔放在會同步的雲端硬碟資料夾裡。
 
-### OpenAI（封面用，**只有 Claude Code／OpenCode 需要**）
+### OpenAI（封面底圖用，**只有 Claude Code／OpenCode 走 API 路線時需要**）
 
-> Codex 與 Antigravity 有內建生圖，**跳過這段**。
+> Codex 與 Antigravity 有內建生圖，**跳過這段**。Claude Code／OpenCode 的 `draw` 技能會先找已登入的 Codex CLI 代生，沒有才用這把 key。
 
 1. 到 [platform.openai.com](https://platform.openai.com) 註冊
 2. **做 Individual 驗證**（Settings → Organization → General）才能用 gpt-image-2
@@ -60,14 +60,14 @@
 
 ### 四種 agent 的封面差異
 
-| Agent | 封面怎麼生 | 要 `OPENAI_API_KEY` 嗎 | 輸出後綴 |
+| Agent | 封面底圖怎麼生 | 要 `OPENAI_API_KEY` 嗎 | 輸出後綴 |
 |-------|-----------|----------------------|---------|
-| Claude Code | `skills/cover-image/draw.py` | ✅ | ` [Claude]` |
+| Claude Code | 全域 `draw` 技能 | 走 API 路線時 ✅ | ` [Claude]` |
 | Codex | 內建 image 生圖 | ❌ | ` [Codex]` |
-| OpenCode | `skills/cover-image/draw.py` | ✅ | ` [OpenCode]` |
+| OpenCode | 全域 `draw` 技能 | 走 API 路線時 ✅ | ` [OpenCode]` |
 | Antigravity | 內建 `generate_image` | ❌ | ` [Antigravity]` |
 
-四邊都遵守同一份 `assets/style/cover-style.md` 與 `assets/persona/` 人物基準照，產出風格才會一致。
+底圖不寫字，四邊都用 `skills/cover/` 疊字；也都遵守同一份 `assets/style/cover-style.md` 與 `assets/persona/` 人物基準照，產出風格才會一致。
 
 ---
 
@@ -78,17 +78,17 @@
 | **人物形象照** | `assets/persona/` | 放一張自己的半身照（去背 PNG 最佳），並把 `assets/style/cover-style.md` 內的 `<你的人物照>` 換成實際檔名。**照片不進 git**（已在 `.gitignore`） |
 | **頻道封面風格** | `assets/style/cover-style.md` | 目前是模板，把所有 `<...>` 佔位符換成你的色票、構圖、字體、配色規則 |
 | **頻道封面參考圖** | `assets/style/reference-thumbnails.png` | （選填）截你頻道現有 9–12 張封面拼成一張。agent 生封面前會讀它學風格 |
-| **字幕詞彙表** | `skills/youtube-video-workflow/references/vocabulary.md`（與 `skills/audio-to-srt/references/vocabulary.md` 同步） | 把「頻道／人物」段換成你的頻道名與常出現的人名，補上你常講的專有名詞 |
-| **詞彙機械替換** | `skills/youtube-video-workflow/references/replacements.md`（與 `skills/audio-to-srt/references/` 同步） | 在表格加一列「聽成 → 正確」。不想動技能本體就改 `~/.audio-to-srt/replacements.md`，會先於內建規則執行 |
-| **疑慮術語掃描** | `.../scripts/find_dubious_terms.py` | `DEFAULT_TERMS` 加入你常講、容易被聽錯的專有名詞 |
-| **行銷語氣** | `skills/youtube-video-workflow/references/marketing-spec.md` | 調整標題風格、貼文口吻與字數（平台規則與結構在同資料夾的 `發布資訊範本.md`，改正本見 `AGENTS.md`） |
+| **字幕詞彙表** | `skills/audio-to-srt/references/vocabulary.md` | 把「頻道／人物」段換成你的頻道名與常出現的人名，補上你常講的專有名詞 |
+| **詞彙機械替換** | `skills/audio-to-srt/references/replacements.md` | 在表格加一列「聽成 → 正確」。不想動技能本體就改 `~/.audio-to-srt/replacements.md`，會先於內建規則執行 |
+| **疑慮術語掃描** | `skills/audio-to-srt/scripts/find_dubious_terms.py` | `DEFAULT_TERMS` 加入你常講、容易被聽錯的專有名詞 |
+| **行銷語氣** | `skills/youtube-long/references/marketing-spec.md` | 調整標題風格、貼文口吻與字數（平台規則與結構在同資料夾的 `發布資訊範本.md`，改正本見 `AGENTS.md`） |
 | **GitHub repo** | `AGENTS.md` | 要做版控就 `git init` 並把 `<你的帳號>/<你的 repo>` 填上 |
 
 ---
 
 ## 4. 可調參數（每支影片可能不同）
 
-### smart-cut（去靜音）
+### 去靜音（`youtube-long` 第 1 步）
 
 | 參數 | 預設 | 何時要改 |
 |------|------|---------|
@@ -97,12 +97,13 @@
 
 技能會先用 45 秒樣本試剪讓你聽節奏，確認後才剪全片。
 
-### cover-image（封面）
+### 封面
 
 | 參數 | 預設 | 何時要改 |
 |------|------|---------|
-| `--quality` | `low`（NT$0.3，99% 場景夠用） | 實體印刷或極致文字精度 → `high`（NT$5.5） |
-| `--size` | `1536x1024`（3:2，接近 16:9） | 要嚴格 16:9 可後處理裁成 `1280x720` |
+| `draw` 的 `--quality` | `low`（NT$0.3，99% 場景夠用） | 實體印刷或極致細節 → `high`（NT$5.5） |
+| `draw` 的 `--size` | `1536x1024`（3:2） | `cover` 會再裁成 1280×720，通常不用改 |
+| `cover` 的 `--corner` | `bl`（左下） | 字會擋到臉或主體就換角：`tl`／`tr`／`bl`／`br` |
 
 ---
 
@@ -111,7 +112,7 @@
 一鍵檢查：
 
 ```bash
-python skills/youtube-video-workflow/scripts/preflight.py
+python skills/youtube-long/scripts/preflight.py
 ```
 
 手動逐條確認（Windows 含中文路徑請用 **PowerShell**，不要用 Git Bash，避免編碼問題）：
@@ -142,7 +143,7 @@ python -c "import os, pathlib; f=pathlib.Path('~/.groq_api_key').expanduser(); k
 # 2. 在任一 agent 裡說：
 ```
 
-> 使用 youtube-video-workflow 處理 `raw/<video-id>`
+> 使用 youtube-long 處理 `raw/<video-id>`
 
 agent 會：
 
@@ -171,7 +172,7 @@ agent 會：
 **Q：生封面跳 `403 Organization must be verified`？**
 A：去 platform.openai.com/settings/organization/general 做 Individual 驗證。
 
-**Q：smart-cut 把我講話的句子剪掉了？**
+**Q：去靜音把我講話的句子剪掉了？**
 A：threshold 太嚴，從 `0.04` 降到 `0.02`；或把 margin 加大到 `"0.5sec,0.5sec"`，每句話前後多留緩衝。
 
 **Q：threshold 跟 margin 到底是什麼？**
