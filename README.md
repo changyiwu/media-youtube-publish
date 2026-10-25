@@ -16,7 +16,7 @@
 raw/<video-id>/source.mp4
     │
     ├─ smart-cut        → 去靜音（auto-editor，自動處理 VFR）
-    ├─ audio-to-srt     → SRT + 純文字（Groq Whisper）
+    ├─ audio-to-srt     → SRT + 純文字（本地 Whisper，Groq 備援）
     ├─ 🛑 疑慮術語確認  → 不確定的專有名詞列給你勘誤
     ├─ 🛑 10 個標題候選 → 等你挑一個
     │

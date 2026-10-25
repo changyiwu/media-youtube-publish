@@ -8,7 +8,7 @@
 ## 0. 這條線在做什麼
 
 1. **smart-cut** — auto-editor 自動剪掉沒講話的片段（去靜音，內建 VFR 防黑畫面）
-2. **audio-to-srt** — Groq Whisper 轉成乾淨 SRT，逐段清字 + 疑慮術語人工勘誤
+2. **audio-to-srt** — 本地 Whisper（或 Groq）轉成乾淨 SRT，逐段清字 + 疑慮術語人工勘誤
 3. **10 個標題候選** — 停下等你挑
 4. **平行產出** — 封面圖（人物基準照 + 頻道風格）、YouTube 描述、社群貼文、SEO 標籤
 5. **打包** — 影片 + 字幕 + 純文字 + 封面 + metadata，放進 `output/<標題> [<Agent>]/`
@@ -25,16 +25,18 @@
 | Python 3.10+ | 跑技能腳本 | python.org |
 | ffmpeg / ffprobe | 影音處理 | `winget install Gyan.FFmpeg`（Win）／`brew install ffmpeg`（Mac） |
 | auto-editor | 去靜音剪輯 | `pip install auto-editor` |
+| faster-whisper | 本地字幕（預設路線） | `pip install faster-whisper`；有 NVIDIA GPU 再加 `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` |
 | openai（Python SDK） | 封面生圖（只有 Claude Code／OpenCode 需要） | `pip install openai` |
 | Git | 版控（選用） | git-scm.com |
 
-> 字幕流程的 Groq 呼叫用 Python 標準函式庫，**不需要**裝 `groq` 套件。
+> 第一次跑本地字幕會下載約 1.6 GB 的 large-v3-turbo 模型。沒有 GPU 也能跑（CPU，較慢）；
+> 不想裝本地引擎就改用 Groq（見下節），Groq 呼叫用標準函式庫，**不需要**裝 `groq` 套件。
 
 ---
 
 ## 2. API Key
 
-### Groq（字幕用，**必填**）
+### Groq（字幕備援，**選填**——裝了 faster-whisper 就不需要）
 
 1. 到 [console.groq.com](https://console.groq.com) 註冊、建立 API Key
 2. 存到 `~/.groq_api_key`（整個檔案就是 key 字串），或設環境變數 `GROQ_API_KEY`
@@ -117,7 +119,12 @@ ffmpeg -version                   # 看到版本號即可
 python -m auto_editor --version   # exit code 255 是正常的，看到版本號就對了
 ```
 
-Groq key 檢查：
+本地 Whisper／Groq key 檢查（有一個就夠）：
+
+```powershell
+python -c "import faster_whisper; print('本地 Whisper: ok')"
+```
+
 
 ```powershell
 python -c "import os, pathlib; f=pathlib.Path('~/.groq_api_key').expanduser(); k=os.getenv('GROQ_API_KEY') or (f.read_text().strip() if f.exists() else ''); print('Groq key:', 'ok' if k else '缺 — 見第 2 節')"
@@ -180,4 +187,4 @@ A：它不會自動建輸出資料夾，先建好 `working/<video-id>/_subtitles
 A：核心腳本（剪片／字幕／生圖）跟 agent 解耦，可以獨立呼叫。但「標題候選／描述撰寫」需要 LLM 推理，要自己接。
 
 **Q：Groq 會看到我的影片內容嗎？**
-A：走 Groq 會，字幕步驟把音訊上傳到 Groq。內容敏感就改走本地 Whisper（`pip install faster-whisper`，見 `skills/audio-to-srt/SKILL.md` 路線 B），音訊不離開本機。
+A：預設不會。字幕預設走本地 Whisper，音訊不離開本機；只有沒裝 faster-whisper、改走 Groq 備援時才會上傳。

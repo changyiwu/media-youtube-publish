@@ -51,7 +51,8 @@ def auto_editor_status() -> bool:
     return False
 
 
-def groq_key_status() -> bool:
+def groq_key_status(needed: bool) -> bool:
+    """Groq 是字幕的備援路線；needed=False（本地 Whisper 可用）時缺 key 只是資訊，不是警告。"""
     if os.environ.get("GROQ_API_KEY", "").strip():
         print("[OK] Groq API key: 已由環境變數提供")
         return True
@@ -63,13 +64,16 @@ def groq_key_status() -> bool:
     if present:
         print(f"[OK] Groq API key: 已由 {key_file} 提供")
         return True
+    if not needed:
+        print("[INFO] 沒有 Groq API key（字幕走本地，不需要）")
+        return False
     print("[WARN] 找不到 Groq API key；Groq 字幕路線無法使用")
     print("       請設定 GROQ_API_KEY 或建立 ~/.groq_api_key；不要把 key 貼到對話中")
     return False
 
 
 def local_whisper_status() -> bool:
-    """本地 Whisper 路線（transcribe_local.py）的引擎有沒有裝。
+    """本地 Whisper（transcribe_local.py，預設字幕路線）的引擎有沒有裝。
 
     只看套件找不找得到、不真的載入：import faster_whisper 要好幾秒，而且 GPU 能不能用
     要到第一次推論才知道，那一層交給 transcribe_local.py 自己退回 CPU。
@@ -78,8 +82,8 @@ def local_whisper_status() -> bool:
         if importlib.util.find_spec(module) is not None:
             print(f"[OK] 本地 Whisper: {package}")
             return True
-    print("[WARN] 沒有本地 Whisper 引擎；本地字幕路線無法使用")
-    print("       需要時執行 python -m pip install faster-whisper")
+    print("[WARN] 沒有本地 Whisper 引擎；字幕只能改走 Groq（音訊會上傳）")
+    print("       建議執行 python -m pip install faster-whisper")
     return False
 
 
@@ -111,8 +115,8 @@ def main() -> int:
     ffmpeg_ok = tool_status("ffmpeg")
     ffprobe_ok = tool_status("ffprobe")
     editor_ok = auto_editor_status()
-    groq_ok = groq_key_status()
     local_ok = local_whisper_status()
+    groq_ok = groq_key_status(needed=not local_ok)
     sync_status()
 
     required_ok = python_ok and ffmpeg_ok and ffprobe_ok and editor_ok

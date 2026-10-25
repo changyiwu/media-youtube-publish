@@ -10,10 +10,10 @@ description: 影片去靜音剪輯與字幕精修工作流。當使用者要求�
 ## 前置工具與環境
 - **ffmpeg**：在 PATH 中。
 - **auto-editor**：可執行 `python -m auto_editor`（版本 29+）。
-- **Groq API Key**：設定於環境變數 `GROQ_API_KEY` 或存在於 `~/.groq_api_key`；或改走本地 Whisper（`pip install faster-whisper`，見 `audio-to-srt` 路線 B）。
+- **本地 Whisper**（預設）：`pip install faster-whisper`；沒裝時改用 **Groq API Key**（環境變數 `GROQ_API_KEY` 或 `~/.groq_api_key`）。
 - **自訂 Python 腳本**（均位於 `skills/`）：
   - `skills/smart-cut/scripts/smart_cut.py`
-  - `skills/audio-to-srt/scripts/transcribe_groq.py`（或本地版 `transcribe_local.py`）
+  - `skills/audio-to-srt/scripts/transcribe_local.py`（備援 `transcribe_groq.py`）
   - `skills/audio-to-srt/scripts/resegment.py`
   - `skills/audio-to-srt/scripts/apply_vocab.py`
   - `skills/audio-to-srt/scripts/validate_srt.py`
@@ -45,17 +45,17 @@ python "skills/smart-cut/scripts/smart_cut.py" \
    ```bash
    ffmpeg -i "working/<video-id>/<video-id>.cut.mp4" -vn -ar 16000 "working/<video-id>/<video-id>.cut.wav" -y
    ```
-2. 上傳 Groq Whisper 進行 STT（大檔會自動以低位元率壓縮上傳）：
+2. 本地 Whisper 進行 STT（音訊不離開本機）：
    ```bash
-   python "skills/audio-to-srt/scripts/transcribe_groq.py" \
+   python "skills/audio-to-srt/scripts/transcribe_local.py" \
      "working/<video-id>/<video-id>.cut.wav" \
-     --out "working/<video-id>/_subtitles/<video-id>.groq.json"
+     --out "working/<video-id>/_subtitles/<video-id>.raw.json"
    ```
-   本地處理（音訊不上傳）時把 `transcribe_groq.py` 換成 `transcribe_local.py`，參數與輸出格式相同。
+   本機沒裝 faster-whisper 時把 `transcribe_local.py` 換成 `transcribe_groq.py`（上傳 Groq，大檔自動壓縮），參數與輸出格式相同。
 3. 依 word-level 時間戳重新精細斷句：
    ```bash
    python "skills/audio-to-srt/scripts/resegment.py" \
-     "working/<video-id>/_subtitles/<video-id>.groq.json" \
+     "working/<video-id>/_subtitles/<video-id>.raw.json" \
      --out "working/<video-id>/_subtitles/<video-id>.raw.srt"
    ```
 4. 機械式套用基礎詞彙替換：
