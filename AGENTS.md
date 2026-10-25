@@ -5,7 +5,7 @@
 
 ## 專案簡介
 
-一條 **YouTube 影片自動化生產線**。使用者把原始影片丟進 `raw/`，Agent 接力完成：智能剪口播（去靜音）→ 語音轉字幕（Groq Whisper）→ 生 10 個標題候選 → 以選定標題建資料夾並平行產出封面、YouTube 描述、社群貼文、SEO 標籤 → 打包成 `output/<標題> [<Agent>]/` 的完整上架素材包。可選再從長片字幕抓亮點剪 ≤2 分鐘 Shorts。
+一條 **YouTube 影片自動化生產線**。使用者把原始影片丟進 `raw/`，Agent 接力完成：智能剪口播（去靜音）→ 語音轉字幕（Groq 或本地 Whisper）→ 生 10 個標題候選 → 以選定標題建資料夾並平行產出封面、YouTube 描述、社群貼文、SEO 標籤 → 打包成 `output/<標題> [<Agent>]/` 的完整上架素材包。可選再從長片字幕抓亮點剪 ≤2 分鐘 Shorts。
 
 四種 Agent（Claude Code／Codex／OpenCode／Antigravity）共用同一套流程與技能，差別只在「封面怎麼生」與「輸出資料夾標籤」。
 
@@ -95,7 +95,7 @@ media-youtube-publish/
 1. **收件**：素材在 `raw/<video-id>/`（video-id 是暫時的工作識別，例如 `20260822-agent-intro`）
 2. **建工作空間**：`working/<video-id>/` 與 `working/<video-id>/_subtitles/`
 3. **剪口播**：`smart_cut.py` → `<video-id>.cut.mp4`（先用 45 秒樣本試剪讓使用者確認節奏）
-4. **轉字幕**：transcribe → resegment → apply_vocab → find_dubious_terms → **🛑 確認疑慮術語** → finalize → **validate_srt【硬關卡】** → srt_to_txt
+4. **轉字幕**：transcribe（Groq 或本地，輸出同格式）→ resegment → apply_vocab → find_dubious_terms → **🛑 確認疑慮術語** → finalize → **validate_srt【硬關卡】** → srt_to_txt
 5. **生 10 個標題候選** → `working/<video-id>/titles.md` → **🛑 等使用者挑**
 6. **選定後**：清洗標題成合法資料夾名（去掉 `？！：／＼?!:/\<>|"*`）→ 建 `output/<標題> [<Agent>]/`，平行產出封面與 `metadata.md`
 7. **打包**：`<標題>.mp4`／`.srt`／`.txt`／`cover.png`／`metadata.md` 五件套
@@ -144,16 +144,18 @@ media-youtube-publish/
 
 ### 相容性
 
-- 腳本**不得引入第三方套件**，標準庫寫得出來就用標準庫——`preflight.py` 只驗 ffmpeg／auto-editor，
-  漏裝的 pip 套件會在流程跑到一半才爆
+- 腳本**不得引入第三方套件**，標準庫寫得出來就用標準庫——漏裝的 pip 套件會在流程跑到一半才爆。
+  **唯一例外**是 `transcribe_local.py` 的 Whisper 引擎（faster-whisper／openai-whisper）：只准在函式內 import、
+  沒裝時一開始就報錯，並由 `preflight.py` 檢查。新增其他例外前先問使用者
 - 維持 **Python 3.9+ 相容**（別「順手現代化」成 `Path | None` 這類 3.10 語法）
-- 目標平台以 **Windows** 為主：本地 Whisper 路線一律加 `PYTHONUTF8=1` 與 `-X utf8`，否則 cp950 寫不了繁中
+- 目標平台以 **Windows** 為主：直接呼叫 `whisper` CLI 時一律加 `PYTHONUTF8=1` 與 `-X utf8`，否則 cp950 寫不了繁中；
+  腳本寫檔一律明確指定 `encoding="utf-8"`
 - 中文檔名上傳 Groq 會壞編碼，`transcribe_groq.py` 內部一律改用 `audio.<ext>` 上傳
 
 ### 安全與隱私
 
 - API key 只從環境變數或使用者家目錄讀（`GROQ_API_KEY`／`~/.groq_api_key`、`OPENAI_API_KEY`／`~/.openai.env`），**不准寫進 repo、不准印在對話裡**
-- Groq 字幕會把音訊上傳到第三方服務；內容可能敏感時**先問使用者**
+- Groq 字幕會把音訊上傳到第三方服務；內容可能敏感時**先問使用者**，不同意就走本地 `transcribe_local.py`
 - 大檔案不進 git（影片、音訊）；人物基準照屬個人隱私，已列入 `.gitignore`
 - **本 repo 為公開**：新增檔案前確認沒有金鑰、個資或未公開素材
 

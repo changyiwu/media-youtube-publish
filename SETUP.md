@@ -180,4 +180,4 @@ A：它不會自動建輸出資料夾，先建好 `working/<video-id>/_subtitles
 A：核心腳本（剪片／字幕／生圖）跟 agent 解耦，可以獨立呼叫。但「標題候選／描述撰寫」需要 LLM 推理，要自己接。
 
 **Q：Groq 會看到我的影片內容嗎？**
-A：會。字幕步驟把音訊上傳到 Groq。內容敏感就改用本地 Whisper（見 `skills/audio-to-srt/SKILL.md` 路線 B）。
+A：走 Groq 會，字幕步驟把音訊上傳到 Groq。內容敏感就改走本地 Whisper（`pip install faster-whisper`，見 `skills/audio-to-srt/SKILL.md` 路線 B），音訊不離開本機。

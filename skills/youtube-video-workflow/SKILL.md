@@ -52,7 +52,7 @@ description: 通用的 YouTube 影片自動化生產總控技能，四種 agent�
 
 - **先剪片、再轉字幕**，SRT 時間碼才會對齊成片。順序顛倒必錯位。
 - 先用約 45 秒代表性片段試剪，讓使用者確認節奏；除非使用者已指定參數或明確授權全自動跑完。
-- Groq 會把音訊送到第三方服務。內容可能敏感時先取得同意；不同意就停止上傳，改建議本地 Whisper。
+- Groq 會把音訊送到第三方服務。內容可能敏感時先取得同意；不同意就停止上傳，改走本地 Whisper（`transcribe_local.py`）。
 - 絕不顯示、回傳、寫入或提交 API key。只從 `GROQ_API_KEY` 或 `~/.groq_api_key` 讀取。
 - 不自行修正不確定的人名、產品名、縮寫、數字或校名；列出字幕段號讓使用者確認。
 - 不增刪字幕段落、不改時間碼。`validate_srt.py` 未通過就停止交付。
@@ -92,7 +92,7 @@ python "$SkillDir/scripts/smart_cut.py" `
 
 剪完用 ffprobe 比對原長與新長，抽查開頭／中段／尾段畫面與音訊，回報剪除比例（例：`原長 14:00 → 新長 1:42（剪掉 88%）`）。
 
-## 2. Groq 字幕管線
+## 2. 字幕管線
 
 ```powershell
 $Work = "working/<video-id>"
@@ -100,12 +100,18 @@ $Cut  = "$Work/<video-id>.cut.mp4"
 $Sub  = "$Work/_subtitles"
 
 python "$SkillDir/scripts/transcribe_groq.py" $Cut --out "$Sub/raw.json"
+# 或本地（音訊不上傳）：python "$SkillDir/scripts/transcribe_local.py" $Cut --out "$Sub/raw.json"
 python "$SkillDir/scripts/resegment.py" "$Sub/raw.json" --audio $Cut --out "$Sub/raw.srt"
 python "$SkillDir/scripts/apply_vocab.py" "$Sub/raw.srt" --out "$Sub/vocab.srt"
 python "$SkillDir/scripts/find_dubious_terms.py" "$Sub/vocab.srt" --out "$Sub/dubious-terms.md"
 ```
 
-`transcribe_groq.py` 在檔案超過 Groq 上限時會用 ffmpeg 產 16 kHz／mono／32 kbps 暫存音訊，不動原檔。可直接餵 `cut.mp4`，不必自己先抽音訊。
+兩支轉錄腳本擇一，輸出同格式的 `raw.json`，後面的指令完全相同。
+
+- `transcribe_groq.py`：雲端，快。檔案超過 Groq 上限時會用 ffmpeg 產 16 kHz／mono／32 kbps 暫存音訊，不動原檔
+- `transcribe_local.py`：本機 faster-whisper（同款 large-v3-turbo），有 NVIDIA GPU 時自動用、失敗退回 CPU；第一次跑會下載約 1.6 GB 模型
+
+兩支都可直接餵 `cut.mp4`，不必自己先抽音訊。
 
 ### 🛑 STOP 1：疑慮術語確認（不准跳過）
 
@@ -227,7 +233,7 @@ python "$SkillDir/scripts/make_vertical.py"  "$Work/short-tmp/short-subtitled.mp
 
 ## 失敗處理
 
-- **找不到 Groq key**：停在字幕步驟，指出 `GROQ_API_KEY` 與 `~/.groq_api_key` 兩個位置，**不要**要求使用者把 key 貼在對話中。
+- **找不到 Groq key**：preflight 有列本地 Whisper 就改走 `transcribe_local.py`；都沒有才停在字幕步驟，指出 `GROQ_API_KEY` 與 `~/.groq_api_key` 兩個位置，**不要**要求使用者把 key 貼在對話中。
 - **Groq 413／檔案仍過大**：切成有重疊的小段轉錄再合併時間碼，不要降到難以辨識的音質。
 - **VFR 或黑畫面**：不要交付。重轉 CFR 後重剪，抽查多個時間點。
 - **雲端硬碟寫入不穩**：保留系統暫存區的成功產物，確認大小與時長後再複製回專案。

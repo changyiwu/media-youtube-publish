@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -62,8 +63,23 @@ def groq_key_status() -> bool:
     if present:
         print(f"[OK] Groq API key: 已由 {key_file} 提供")
         return True
-    print("[WARN] 找不到 Groq API key；剪輯可執行，但 Groq 字幕會停止")
+    print("[WARN] 找不到 Groq API key；Groq 字幕路線無法使用")
     print("       請設定 GROQ_API_KEY 或建立 ~/.groq_api_key；不要把 key 貼到對話中")
+    return False
+
+
+def local_whisper_status() -> bool:
+    """本地 Whisper 路線（transcribe_local.py）的引擎有沒有裝。
+
+    只看套件找不找得到、不真的載入：import faster_whisper 要好幾秒，而且 GPU 能不能用
+    要到第一次推論才知道，那一層交給 transcribe_local.py 自己退回 CPU。
+    """
+    for module, package in (("faster_whisper", "faster-whisper"), ("whisper", "openai-whisper")):
+        if importlib.util.find_spec(module) is not None:
+            print(f"[OK] 本地 Whisper: {package}")
+            return True
+    print("[WARN] 沒有本地 Whisper 引擎；本地字幕路線無法使用")
+    print("       需要時執行 python -m pip install faster-whisper")
     return False
 
 
@@ -95,12 +111,16 @@ def main() -> int:
     ffmpeg_ok = tool_status("ffmpeg")
     ffprobe_ok = tool_status("ffprobe")
     editor_ok = auto_editor_status()
-    groq_key_status()
+    groq_ok = groq_key_status()
+    local_ok = local_whisper_status()
     sync_status()
 
     required_ok = python_ok and ffmpeg_ok and ffprobe_ok and editor_ok
     if required_ok:
-        print("[OK] 剪輯環境可用；Groq key 有設定時可繼續字幕流程")
+        if groq_ok or local_ok:
+            print("[OK] 剪輯與字幕環境可用")
+        else:
+            print("[WARN] 剪輯環境可用，但 Groq 與本地 Whisper 都沒有，字幕步驟會停止")
         return 0
     print("[ERR] 前置檢查未通過，請先修正必要項目")
     return 1

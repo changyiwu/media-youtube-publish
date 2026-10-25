@@ -10,10 +10,10 @@ description: 影片去靜音剪輯與字幕精修工作流。當使用者要求�
 ## 前置工具與環境
 - **ffmpeg**：在 PATH 中。
 - **auto-editor**：可執行 `python -m auto_editor`（版本 29+）。
-- **Groq API Key**：設定於環境變數 `GROQ_API_KEY` 或存在於 `~/.groq_api_key`。
+- **Groq API Key**：設定於環境變數 `GROQ_API_KEY` 或存在於 `~/.groq_api_key`；或改走本地 Whisper（`pip install faster-whisper`，見 `audio-to-srt` 路線 B）。
 - **自訂 Python 腳本**（均位於 `skills/`）：
   - `skills/smart-cut/scripts/smart_cut.py`
-  - `skills/audio-to-srt/scripts/transcribe_groq.py`
+  - `skills/audio-to-srt/scripts/transcribe_groq.py`（或本地版 `transcribe_local.py`）
   - `skills/audio-to-srt/scripts/resegment.py`
   - `skills/audio-to-srt/scripts/apply_vocab.py`
   - `skills/audio-to-srt/scripts/validate_srt.py`
@@ -51,6 +51,7 @@ python "skills/smart-cut/scripts/smart_cut.py" \
      "working/<video-id>/<video-id>.cut.wav" \
      --out "working/<video-id>/_subtitles/<video-id>.groq.json"
    ```
+   本地處理（音訊不上傳）時把 `transcribe_groq.py` 換成 `transcribe_local.py`，參數與輸出格式相同。
 3. 依 word-level 時間戳重新精細斷句：
    ```bash
    python "skills/audio-to-srt/scripts/resegment.py" \

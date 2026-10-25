@@ -30,6 +30,7 @@ MANIFEST = {
         ("scripts/resegment.py", "scripts/resegment.py"),
         ("scripts/srt_to_txt.py", "scripts/srt_to_txt.py"),
         ("scripts/transcribe_groq.py", "scripts/transcribe_groq.py"),
+        ("scripts/transcribe_local.py", "scripts/transcribe_local.py"),
         ("scripts/validate_srt.py", "scripts/validate_srt.py"),
         ("references/replacements.md", "references/replacements.md"),
         ("references/vocabulary.md", "references/vocabulary.md"),

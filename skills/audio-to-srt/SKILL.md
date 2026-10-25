@@ -1,6 +1,6 @@
 ---
 name: audio-to-srt
-description: 音訊/影片檔自動生成乾淨 SRT 字幕檔。當使用者要「把音訊轉字幕」「做 SRT」「語音轉文字 + 時間碼」「影片上字幕」時請一定要使用此技能。預設走 Groq Whisper-large-v3-turbo（雲端、word-level 時間碼），備援本地 Whisper medium。逐段清字並嚴守時間碼對齊。四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用。
+description: 音訊/影片檔自動生成乾淨 SRT 字幕檔。當使用者要「把音訊轉字幕」「做 SRT」「語音轉文字 + 時間碼」「影片上字幕」時請一定要使用此技能。兩條路線同用 Whisper large-v3-turbo、同樣 word-level 時間碼：Groq（雲端，預設）或本地 faster-whisper（音訊不離開本機）。逐段清字並嚴守時間碼對齊。四種 agent（Claude Code／Codex／OpenCode／Antigravity）共用。
 ---
 
 # audio-to-srt：音訊 → 乾淨 SRT
@@ -16,9 +16,9 @@ description: 音訊/影片檔自動生成乾淨 SRT 字幕檔。當使用者要�
 | 路線 | 模型 | 時間碼粒度 | 速度 | 隱私 | 適用 |
 |------|------|------------|------|------|------|
 | **A. Groq（預設）** | whisper-large-v3-turbo | **word-level** | 快 | 上雲 | 一般情境，要快要準 |
-| B. 本地 Whisper | medium | segment-level | 慢 | 完全本地 | 敏感內容、無網路 |
+| B. 本地 Whisper | large-v3-turbo | **word-level** | 有 GPU 快、CPU 慢 | 完全本地 | 敏感內容、無網路、無 Groq key |
 
-走 Groq 才能用 `resegment.py` 做精準斷句。本地 Whisper 只能保留原 segment。
+兩條路線輸出同格式的 JSON，**只有 Step 4 不同**，Step 5 之後（resegment → apply_vocab → 清字 → 驗證）完全共用。
 
 ## 核心原則（最重要，違反即失敗）
 
@@ -142,24 +142,32 @@ python ".../scripts/srt_to_txt.py" \
 
 ---
 
-## 路線 B：本地 Whisper 流程（備援）
+## 路線 B：本地 Whisper 流程
 
-當使用者明確要求本地處理、或無 Groq Key 時走此路線。
+使用者要求本地處理、內容敏感、或沒有 Groq key 時走此路線。**只取代 Step 4**，其餘步驟與路線 A 完全相同。
 
+### 安裝（一次）
 ```bash
-PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python -X utf8 -m whisper "輸入檔.mp3" \
-  --model medium \
-  --language zh \
-  --output_format srt \
-  --output_dir ./_subtitles \
-  --initial_prompt "以下為繁體中文。專有名詞：Claude、Claude Code、Gemini Notebook、Gemini、Groq、Whisper、Obsidian。"
+python -m pip install faster-whisper
+# 有 NVIDIA GPU 時再加（沒裝也能跑，會用 CPU）：
+python -m pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"
 ```
+第一次執行會從 Hugging Face 下載 large-v3-turbo（約 1.6 GB），之後走快取。
 
-**Windows 踩坑**：
-1. `whisper` CLI 不在 PATH → 用 `python -m whisper`
-2. cp950 寫不了繁中 → 必須加 `PYTHONUTF8=1` 與 `-X utf8`
+### Step 4（取代）：本地 STT，產出 Groq 同格式 JSON
+```bash
+python ".../scripts/transcribe_local.py"   "輸入檔.mp4"   --out _subtitles/輸入檔.groq.json
+```
+輸出跟 `transcribe_groq.py` 一樣有 `words` 與 `segments`，接著照常跑 Step 5 的 `resegment.py`。
 
-產出後跳過 Step 5（resegment 不適用，segment-level 時間碼只能照原樣），直接進 Step 6（apply_vocab）→ Step 7（清字）→ Step 8（驗證）→ Step 9（轉純文字）→ Step 10（交付）。
+- `--device auto`（預設）：有 GPU 就用、推論失敗自動退回 CPU；`--device cpu` 強制 CPU
+- `--engine auto`（預設）：先找 faster-whisper，再找 openai-whisper
+- 詞彙 prompt 與 Groq 共用 `references/vocabulary.md`
+
+實測（RTX 5060 Ti）：3 分鐘音訊 GPU 約 6 秒；35 秒音訊 CPU 約 12 秒。
+
+**跟 Groq 的差別**：每個 30 秒視窗獨立辨識（不吃前文，防重複幻覺），偶爾會有整個視窗漂成簡體——
+Step 7 清字時依 `cleanup_rules.md` 改回繁體。
 
 ---
 
@@ -170,6 +178,7 @@ skills/audio-to-srt/
 ├── SKILL.md                      # 本檔
 ├── scripts/
 │   ├── transcribe_groq.py        # Groq STT，產 word-level JSON
+│   ├── transcribe_local.py       # 本地 Whisper STT，產同格式 JSON
 │   ├── resegment.py              # 依 word-level 時間碼重新斷句
 │   ├── apply_vocab.py            # 詞彙機械替換（只動文字行）
 │   ├── srt_to_txt.py             # SRT → 純文字稿
@@ -183,16 +192,18 @@ skills/audio-to-srt/
 ## 路線選擇決策樹
 
 ```
-有 GROQ_API_KEY？
-├─ 有 → 路線 A（Groq）
-│       └─ 檔案 > 25 MB？→ 先 ffmpeg 降至 16k mono 再傳
-└─ 無 → 提示使用者設 key；若使用者要求離線 → 路線 B（本地 Whisper）
+內容敏感、要求離線？
+├─ 是 → 路線 B（本地 Whisper）
+└─ 否 → 有 GROQ_API_KEY？
+        ├─ 有 → 路線 A（Groq）；檔案 > 24 MB 會自動壓縮
+        └─ 無 → 裝了本地引擎（preflight 會列）→ 路線 B；都沒有 → 提示設 key 或裝 faster-whisper
 ```
 
 ## 踩過的坑
 
 - Whisper 辨識準但斷句差 → Groq word-level + resegment 解決
-- 長音訊爆記憶體（本地）→ 改走 Groq；Groq 25 MB 上限 → ffmpeg 降取樣
+- Groq 25 MB 上限 → ffmpeg 降取樣（已內建）；本地路線沒有檔案大小上限
+- 舊版本地路線只有 segment-level 時間碼、接不上 resegment → 改用 `transcribe_local.py` 開 word timestamps，輸出 Groq 同格式
 - Cloud / Claude / Codex 互相誤判 → apply_vocab 順序講究：先處理 GPT-Codex 變體（含 DexDex），再 Claude，最後 Cloud→Claude
 - Windows cp950 編碼 → 本地路線一律加 `PYTHONUTF8=1`
 - 中文檔名上傳 Groq 編碼壞掉 → transcribe_groq.py 內部改用 `audio.<ext>` 上傳
