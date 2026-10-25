@@ -139,7 +139,8 @@ media-youtube-publish/
 6. 底圖不寫字，最後用 `skills/cover/` 疊字（`--corner` 選不擋臉的角）
 
 優先序：**人物基準照 > 風格指南 > 個別影片的 prompt 變化**。
-`assets/` 目前是模板狀態，第一次使用前先換成自己的（見 `SETUP.md`）。
+`cover-style.md` 與人物照都是個人資料、不進 git（已在 `.gitignore`）；repo 只放範本 `cover-style.example.md`，
+**不准改範本來放個人設定**。新電腦 clone 下來沒有 `cover-style.md` 時，照 `SETUP.md` 從範本複製。
 
 ### 相容性
 
@@ -194,7 +195,7 @@ media-youtube-publish/
 - **不要假設另一個 Agent 知道你做了什麼**，交接寫得像給陌生人看
 - 所有回應、文件與 commit 訊息使用繁體中文
 - 修改前先確認計畫，優先保留原有資料結構
-- **產出一律放 `output/`**：本專案產生的檔案或資料夾預設放專案根目錄的 `output/`（一支影片一個資料夾），不另開 `outputs/`、`exports/`、`generated/`、`out/` 之類的資料夾；`output/` 只追蹤子資料夾的 `.gitkeep` 佔位檔，內容不進 git。
+- **產出一律放 `output/`**：本專案產生的檔案或資料夾預設放專案根目錄的 `output/`（一支影片一個資料夾），不另開 `outputs/`、`exports/`、`generated/`、`out/` 之類的資料夾；整個 `output/` 都在 `.gitignore`，不進 git（腳本會自己建資料夾）。
 
 ## Claude Code 專屬
 

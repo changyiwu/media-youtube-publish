@@ -76,7 +76,7 @@
 | 項目 | 檔案 | 怎麼改 |
 |------|------|--------|
 | **人物形象照** | `assets/persona/` | 放一張自己的半身照（去背 PNG 最佳），並把 `assets/style/cover-style.md` 內的 `<你的人物照>` 換成實際檔名。**照片不進 git**（已在 `.gitignore`） |
-| **頻道封面風格** | `assets/style/cover-style.md` | 目前是模板，把所有 `<...>` 佔位符換成你的色票、構圖、字體、配色規則 |
+| **頻道封面風格** | `assets/style/cover-style.md` | 把範本 `cover-style.example.md` 複製成 `cover-style.md`，再把所有 `<...>` 佔位符換成你的色票、構圖、字體、配色規則。**個人風格不進 git**（已在 `.gitignore`） |
 | **頻道封面參考圖** | `assets/style/reference-thumbnails.png` | （選填）截你頻道現有 9–12 張封面拼成一張。agent 生封面前會讀它學風格 |
 | **字幕詞彙表** | `skills/audio-to-srt/references/vocabulary.md` | 把「頻道／人物」段換成你的頻道名與常出現的人名，補上你常講的專有名詞 |
 | **詞彙機械替換** | `skills/audio-to-srt/references/replacements.md` | 在表格加一列「聽成 → 正確」。不想動技能本體就改 `~/.audio-to-srt/replacements.md`，會先於內建規則執行 |

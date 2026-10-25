@@ -16,6 +16,12 @@ assets/persona/*.png
 assets/persona/*.jpg
 assets/persona/*.jpeg
 
+# 個人封面風格（範本是 cover-style.example.md，複製成這個檔再改）
+assets/style/cover-style.md
+
+# 所有產出（成品、頻道品牌圖等），整個資料夾不進 git；腳本會自己建資料夾
+output/
+
 # Python
 __pycache__/
 *.pyc
@@ -23,7 +29,6 @@ __pycache__/
 
 # 影片原始素材與成品（太大，不進 git）
 raw/**
-output/final/**
 working/**
 *.mp4
 *.mov
@@ -36,7 +41,6 @@ working/**
 
 # 但保留資料夾結構
 !raw/.gitkeep
-!output/final/.gitkeep
 !working/.gitkeep
 
 # 中間字幕檔（依需求可移除這條）

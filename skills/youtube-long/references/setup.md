@@ -67,7 +67,7 @@ project/
 | `audio-to-srt/scripts/find_dubious_terms.py` 的 `DEFAULT_TERMS` | 加入自己常講、容易被聽錯的專有名詞 |
 | `youtube-long/references/marketing-spec.md` | 調整標題風格、貼文口吻與字數；平台規則與結構在同資料夾的 `發布資訊範本.md` |
 | `assets/persona/` | 放自己的人物基準照（原始照，不是生成圖） |
-| `assets/style/cover-style.md` | 定義自己的色票、構圖、字型與禁止事項 |
+| `assets/style/cover-style.md` | 從範本 `cover-style.example.md` 複製後，定義自己的色票、構圖、字型與禁止事項（個人檔，不進 git） |
 | `assets/style/reference-thumbnails.png` | 選放 9–12 張既有封面拼成一張圖 |
 
 不做個人化也能剪片與轉字幕，但機械詞彙替換會不符合你的內容，人物封面也不會像你。
