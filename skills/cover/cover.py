@@ -215,7 +215,7 @@ def main() -> int:
                     help="橫式文字放哪個角：左上 tl、右上 tr、左下 bl、右下 br；選不會擋到臉或主體的角")
     ap.add_argument("--formats", default="yt", help="逗號分隔：yt,reel,post")
     ap.add_argument("--fill", default="#FFFFFF", help="主標顏色")
-    ap.add_argument("--accent", default="#FFD23F", help="小標顏色")
+    ap.add_argument("--accent", default="#FFC53D", help="小標顏色")
     ap.add_argument("--stroke", default="#111111", help="描邊顏色")
     ap.add_argument("--shade", type=int, default=150, help="文字側暗角強度 0–255，0 關閉")
     ap.add_argument("--outdir", type=Path, default=Path("."))
