@@ -23,7 +23,7 @@
 | 工具 | 用途 | 安裝 |
 |------|------|------|
 | Python 3.10+ | 跑技能腳本 | python.org |
-| ffmpeg / ffprobe | 影音處理 | `winget install Gyan.FFmpeg`（Win）／`brew install ffmpeg`（Mac） |
+| ffmpeg / ffprobe | 影音處理 | Win x64: `winget install Gyan.FFmpeg`；Win ARM64: 先試 `winget install BtbN.FFmpeg.GPL.9.0 --architecture arm64`，跑 `ffmpeg -version` 若回「應用程式控制原則已封鎖此檔案」（Smart App Control）就 `winget uninstall BtbN.FFmpeg.GPL.9.0` 改裝 `Gyan.FFmpeg`（x64，2026-10-28 LT-YI-RS 實測 ARM64 版被擋）／Mac: `brew install ffmpeg` |
 | auto-editor | 去靜音剪輯 | `pip install auto-editor` |
 | faster-whisper | 本地字幕（預設路線） | `pip install faster-whisper`；有 NVIDIA GPU 再加 `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` |
 | Pillow | 封面裁切疊字（`skills/cover/`） | `pip install pillow` |
