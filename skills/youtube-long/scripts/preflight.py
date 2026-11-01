@@ -15,6 +15,7 @@ from pathlib import Path
 # 本地 Whisper 二擇一、auto-editor 走 CLI，判斷方式不同，各自有專屬檢查。
 OPTIONAL_PACKAGES = [
     ("PIL", "pillow", "封面裁切疊字（skills/cover/cover.py）"),
+    ("opencc", "opencc-python-reimplemented", "手動斷句時簡轉繁（build_subs_manual.py --traditional）"),
 ]
 
 # youtube-long 直接引用的同層技能（不再各帶一份腳本），缺了整條線跑不動

@@ -154,7 +154,7 @@ media-youtube-publish/
   2. 腳本一開始就確認套件在不在，沒裝立刻停下並印出安裝指令，不准做到一半才 import 失敗
   3. 寫進 `SETUP.md`〈系統前置〉表格
   標準庫做得到、難度差不多的仍優先用標準庫（每多一個套件，每台電腦、每個 Python 都要多裝一次）。
-  目前登記的：auto-editor、faster-whisper／openai-whisper（專屬檢查）、pillow（`OPTIONAL_PACKAGES`）。封面生圖走全域 `draw` 技能，它的套件由它自己管
+  目前登記的：auto-editor、faster-whisper／openai-whisper（專屬檢查）、pillow、opencc-python-reimplemented（`OPTIONAL_PACKAGES`）。封面生圖走全域 `draw` 技能，它的套件由它自己管
 - 維持 **Python 3.9+ 相容**（別「順手現代化」成 `Path | None` 這類 3.10 語法）
 - 目標平台以 **Windows** 為主：直接呼叫 `whisper` CLI 時一律加 `PYTHONUTF8=1` 與 `-X utf8`，否則 cp950 寫不了繁中；
   腳本寫檔一律明確指定 `encoding="utf-8"`

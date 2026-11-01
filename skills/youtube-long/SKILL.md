@@ -118,6 +118,8 @@ python "$SrtDir/scripts/apply_vocab.py" "$Sub/raw.srt" --out "$Sub/vocab.srt"
 python "$SrtDir/scripts/find_dubious_terms.py" "$Sub/vocab.srt" --out "$Sub/dubious-terms.md"
 ```
 
+`raw.srt` 若大量斷在詞中間（Whisper 幾乎沒出標點時），改照 `audio-to-srt` 的 Step 5.5 用 `build_subs_manual.py` 重建，再接 `apply_vocab.py`。
+
 ### 🛑 STOP 1：疑慮術語確認（不准跳過）
 
 1. 讀完整 `vocab.srt` 與 `dubious-terms.md`。

@@ -27,6 +27,7 @@
 | auto-editor | 去靜音剪輯 | `pip install auto-editor` |
 | faster-whisper | 本地字幕（預設路線） | `pip install faster-whisper`；有 NVIDIA GPU 再加 `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` |
 | Pillow | 封面裁切疊字（`skills/cover/`） | `pip install pillow` |
+| opencc（選用） | 手動斷句時簡轉繁（`build_subs_manual.py --traditional`） | `pip install opencc-python-reimplemented` |
 | 全域 `draw` 技能 | 封面底圖（只有 Claude Code／OpenCode 需要；套件由它自己管） | agent-setup-guide 的 #05 生圖 |
 | Git | 版控（選用） | git-scm.com |
 

@@ -101,6 +101,41 @@ python "<本技能目錄>/scripts/resegment.py" \
 將每段的 end 縮到靜音起點、下一段的 start 延到靜音終點，讓字幕在靜音處自動留白。
 不傳 `--audio` 時維持舊行為（word timestamps 本身無靜音間隔）。
 
+### Step 5.5：檢查斷句品質（標點稀少時必做）
+
+上面的切點優先序靠標點和 segment 邊界。**Whisper 幾乎不輸出標點時（直播、口語逐字稿常見），前三層全部落空，
+退化成純字數硬切**，會斷在詞中間：
+
+```
+…我們來找一下 Google Play 有沒有這個應用程式目前在      ← 段尾是半句
+版的 Chrome 網頁裡面找到這個安裝並建                      ← 段首接不上、段尾斷詞
+```
+
+**判斷**：讀一遍 `raw.srt`。只有零星幾段不順 → 照常往下走（清字階段不能動段落，但不影響理解）；
+大量「段尾是半個詞」或「段首接不上前段」→ 不要逐段補，改用 `build_subs_manual.py` 重建 `raw.srt`：
+
+```bash
+# 1) 看含停頓標記的原文（⏸ 明顯停頓、· 短停頓），依語意決定切點
+python "<本技能目錄>/scripts/build_subs_manual.py" _subtitles/輸入檔.raw.json --dump-text
+
+# 2) 寫成一行一句的 segments.txt，只換行、不改字，再重建（覆蓋 resegment 的 raw.srt）
+python "<本技能目錄>/scripts/build_subs_manual.py" _subtitles/輸入檔.raw.json \
+  --segments _subtitles/segments.txt \
+  --out _subtitles/輸入檔.raw.srt
+```
+
+- `segments.txt` 串起來必須與原文**逐字相符**（空白不計），不符就中止並印出第一個不同處；標點和錯字留給 Step 6–7
+- 每段建議不超過 `MAX_CHARS`（15 字）的量級；一句太長就在語意停頓處再分行
+- 時間碼來自 word-level：start＝段首字、end＝段末字，切點落在詞中間時依字數內插
+- 顯示時間不夠（`--rate` 預設 7 等效字/秒、`--min-dur` 預設 0.8 秒）時往後延長，但只用到下一句開始前的空隙
+- **這條路線不做靜音留白**（沒有 `--audio`），段間只有 word 時間碼本身的空隙
+
+選用參數：`--fixes fixes.tsv`（每行 `舊字串<TAB>新字串`，只改顯示文字）；一般修正走 Step 6 就好。
+`--traditional` 先用 opencc 的 `s2twp` 轉繁，適合整段漂成簡體的素材（需要 `python -m pip install opencc-python-reimplemented`）；
+`--dump-text` 與重建要用同一個設定，否則逐字比對不過。
+
+重建後一樣走 Step 6 → 6.5 → 7 → 8。
+
 ### Step 6：套用詞彙修正（機械式替換）
 ```bash
 python "<本技能目錄>/scripts/apply_vocab.py" \
@@ -177,16 +212,19 @@ python "<本技能目錄>/scripts/srt_to_txt.py" \
 ```
 skills/audio-to-srt/
 ├── SKILL.md                      # 本檔
+├── THIRD_PARTY_NOTICES.md        # 上游來源與 MIT 授權全文
 ├── scripts/
 │   ├── transcribe_groq.py        # Groq STT，產 word-level JSON
 │   ├── transcribe_local.py       # 本地 Whisper STT，產同格式 JSON
 │   ├── resegment.py              # 依 word-level 時間碼重新斷句
+│   ├── build_subs_manual.py      # 依人工語意切點重建字幕（Step 5.5）
 │   ├── apply_vocab.py            # 詞彙機械替換（只動文字行）
 │   ├── find_dubious_terms.py     # 列出疑慮術語段落（Step 6.5）
 │   ├── finalize_subtitles.py     # 套用使用者確認的更正（可限定段號）
 │   ├── srt_to_txt.py             # SRT → 純文字稿
 │   ├── validate_srt.py           # 時間碼驗證
-│   └── test_cross_segment.py     # 跨段替換與驗證的回歸測試
+│   ├── test_cross_segment.py     # 跨段替換與驗證的回歸測試
+│   └── test_build_subs_manual.py # 手動斷句的回歸測試
 └── references/
     ├── cleanup_rules.md          # 清字規則（逐段不跨段）
     ├── replacements.md           # 機械替換規則＋保護詞（apply_vocab.py 讀這份）
@@ -216,6 +254,7 @@ skills/audio-to-srt/
 ## 踩過的坑
 
 - Whisper 辨識準但斷句差 → word-level 時間碼 + resegment 解決
+- 標點稀少時 resegment 退化成字數硬切 → Step 5.5 改用 build_subs_manual.py 依語意重建
 - Groq 25 MB 上限 → ffmpeg 降取樣（已內建）；本地路線沒有檔案大小上限
 - 舊版本地路線只有 segment-level 時間碼、接不上 resegment → 改用 `transcribe_local.py` 開 word timestamps，輸出 Groq 同格式
 - Cloud / Claude / Codex 互相誤判 → apply_vocab 順序講究：先處理 GPT-Codex 變體（含 DexDex），再 Claude，最後 Cloud→Claude
