@@ -100,7 +100,7 @@ media-youtube-publish/
 9. **更新 `handoff.md`**
 
 `發布資訊.md` **照 `skills/youtube-long/references/發布資訊範本.md` 的結構寫**（YouTube／FB／IG／Threads 文案、AI 揭露、可直接貼進標籤欄的一行），口播的寫法照同資料夾的 `marketing-spec.md`。
-範本是五個媒體專案共用的，**正本就是本 repo 這一份**：要改就改正本，再整份覆蓋到 media-short-film、media-3d-studio、media-music-video、media-video-specs 的 `templates/`；`skills/youtube-long/scripts/check_sync.py` 會逐一比對（`preflight.py` 順帶跑，不一致只 `[WARN]`）。其他專案的副本不准就地改。
+範本是六個媒體專案共用的，**正本就是本 repo 這一份**：要改就改正本，再整份覆蓋到 media-short-film、media-3d-studio、media-music-video、media-video-specs、media-code-video 的 `templates/`；`skills/youtube-long/scripts/check_sync.py` 會逐一比對（`preflight.py` 順帶跑，不一致只 `[WARN]`）。其他專案的副本不准就地改。
 
 ### 三個不准跳過的 STOP 關卡
 

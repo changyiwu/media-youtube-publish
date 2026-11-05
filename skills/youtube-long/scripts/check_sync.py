@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """驗證「正本在本 repo、副本在隔壁專案」的檔案逐位元一致。
 
-背景：發布資訊範本是五個媒體專案共用的，正本在本 repo，另外四個專案各放一份副本
+背景：發布資訊範本是六個媒體專案共用的，正本在本 repo，另外五個專案各放一份副本
 （見 AGENTS.md）。改了正本卻忘了覆蓋副本，各專案就會悄悄用到舊範本——這支把
 「記得同步」從人腦移到機器。
 
@@ -32,6 +32,7 @@ DOWNSTREAM = [
             "media-3d-studio/templates/發布資訊範本.md",
             "media-music-video/templates/發布資訊範本.md",
             "media-video-specs/templates/發布資訊範本.md",
+            "media-code-video/templates/發布資訊範本.md",
         ],
     ),
 ]
